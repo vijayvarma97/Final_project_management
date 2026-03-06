@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+    <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml">
+        <edmx:Include Alias="Capabilities" Namespace="Org.OData.Capabilities.V1"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+        <edmx:Include Alias="Common" Namespace="com.sap.vocabularies.Common.v1"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+        <edmx:Include Alias="Core" Namespace="Org.OData.Core.V1"/>
+    </edmx:Reference>
+    <edmx:DataServices>
+        <Schema Namespace="ProjectManagerService" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+            <Annotation Term="Core.Links">
+                <Collection>
+                    <Record>
+                        <PropertyValue Property="rel" String="author"/>
+                        <PropertyValue Property="href" String="https://cap.cloud.sap"/>
+                    </Record>
+                </Collection>
+            </Annotation>
+            <EntityContainer Name="EntityContainer">
+                <EntitySet Name="Projects" EntityType="ProjectManagerService.Projects">
+                    <NavigationPropertyBinding Path="requiredRoles" Target="ProjectRoles"/>
+                    <NavigationPropertyBinding Path="allocations" Target="Allocations"/>
+                </EntitySet>
+                <EntitySet Name="Resources" EntityType="ProjectManagerService.Resources">
+                    <NavigationPropertyBinding Path="roles" Target="ResourceRoles"/>
+                    <NavigationPropertyBinding Path="allocations" Target="Allocations"/>
+                </EntitySet>
+                <EntitySet Name="Allocations" EntityType="ProjectManagerService.Allocations">
+                    <NavigationPropertyBinding Path="project" Target="Projects"/>
+                    <NavigationPropertyBinding Path="resource" Target="Resources"/>
+                </EntitySet>
+                <EntitySet Name="ProjectRoles" EntityType="ProjectManagerService.ProjectRoles">
+                    <NavigationPropertyBinding Path="project" Target="Projects"/>
+                </EntitySet>
+                <EntitySet Name="ResourceRoles" EntityType="ProjectManagerService.ResourceRoles">
+                    <NavigationPropertyBinding Path="resource" Target="Resources"/>
+                </EntitySet>
+                <EntitySet Name="Analytics_Cost_Consumption" EntityType="ProjectManagerService.Analytics_Cost_Consumption"/>
+            </EntityContainer>
+            <EntityType Name="Projects">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.String" MaxLength="10" Nullable="false"/>
+                <Property Name="name" Type="Edm.String" MaxLength="100"/>
+                <Property Name="budget" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="startDate" Type="Edm.Date"/>
+                <Property Name="endDate" Type="Edm.Date"/>
+                <NavigationProperty Name="requiredRoles" Type="Collection(ProjectManagerService.ProjectRoles)" Partner="project">
+                    <OnDelete Action="Cascade"/>
+                </NavigationProperty>
+                <NavigationProperty Name="allocations" Type="Collection(ProjectManagerService.Allocations)" Partner="project"/>
+            </EntityType>
+            <EntityType Name="Resources">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.String" MaxLength="10" Nullable="false"/>
+                <Property Name="name" Type="Edm.String" MaxLength="100"/>
+                <Property Name="type" Type="Edm.String" MaxLength="20"/>
+                <Property Name="salary" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="officeCost" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="overheadCost" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="hourlyRate" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <NavigationProperty Name="roles" Type="Collection(ProjectManagerService.ResourceRoles)" Partner="resource">
+                    <OnDelete Action="Cascade"/>
+                </NavigationProperty>
+                <NavigationProperty Name="allocations" Type="Collection(ProjectManagerService.Allocations)" Partner="resource"/>
+            </EntityType>
+            <EntityType Name="Allocations">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.Guid" Nullable="false"/>
+                <NavigationProperty Name="project" Type="ProjectManagerService.Projects" Partner="allocations">
+                    <ReferentialConstraint Property="project_ID" ReferencedProperty="ID"/>
+                </NavigationProperty>
+                <Property Name="project_ID" Type="Edm.String" MaxLength="10"/>
+                <NavigationProperty Name="resource" Type="ProjectManagerService.Resources" Partner="allocations">
+                    <ReferentialConstraint Property="resource_ID" ReferencedProperty="ID"/>
+                </NavigationProperty>
+                <Property Name="resource_ID" Type="Edm.String" MaxLength="10"/>
+                <Property Name="role" Type="Edm.String" MaxLength="50"/>
+                <Property Name="hours" Type="Edm.Int32"/>
+            </EntityType>
+            <EntityType Name="ProjectRoles">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.Guid" Nullable="false"/>
+                <NavigationProperty Name="project" Type="ProjectManagerService.Projects" Partner="requiredRoles">
+                    <ReferentialConstraint Property="project_ID" ReferencedProperty="ID"/>
+                </NavigationProperty>
+                <Property Name="project_ID" Type="Edm.String" MaxLength="10"/>
+                <Property Name="role" Type="Edm.String" MaxLength="50"/>
+                <Property Name="count" Type="Edm.Int32"/>
+            </EntityType>
+            <EntityType Name="ResourceRoles">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.Guid" Nullable="false"/>
+                <NavigationProperty Name="resource" Type="ProjectManagerService.Resources" Partner="roles">
+                    <ReferentialConstraint Property="resource_ID" ReferencedProperty="ID"/>
+                </NavigationProperty>
+                <Property Name="resource_ID" Type="Edm.String" MaxLength="10"/>
+                <Property Name="role" Type="Edm.String" MaxLength="50"/>
+            </EntityType>
+            <EntityType Name="Analytics_Cost_Consumption">
+                <Key>
+                    <PropertyRef Name="projectId"/>
+                </Key>
+                <Property Name="projectId" Type="Edm.String" MaxLength="10" Nullable="false"/>
+                <Property Name="projectName" Type="Edm.String" MaxLength="100"/>
+                <Property Name="projectBudget" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="consumedCost" Type="Edm.Decimal" Precision="15" Scale="2"/>
+            </EntityType>
+            <Annotations Target="ProjectManagerService.Allocations/ID">
+                <Annotation Term="Core.ComputedDefaultValue" Bool="true"/>
+            </Annotations>
+            <Annotations Target="ProjectManagerService.ProjectRoles/ID">
+                <Annotation Term="Core.ComputedDefaultValue" Bool="true"/>
+            </Annotations>
+            <Annotations Target="ProjectManagerService.ResourceRoles/ID">
+                <Annotation Term="Core.ComputedDefaultValue" Bool="true"/>
+            </Annotations>
+            <Annotations Target="ProjectManagerService.EntityContainer/Analytics_Cost_Consumption">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record Type="Capabilities.DeleteRestrictionsType">
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record Type="Capabilities.UpdateRestrictionsType">
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="ProjectManagerService.Analytics_Cost_Consumption/consumedCost">
+                <Annotation Term="Core.Computed" Bool="true"/>
+            </Annotations>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>

@@ -1,0 +1,12 @@
+{
+  "name": "project_management-approuter",
+  "version": "0.0.1",
+  "description": "Approuter for project_management UI and CAPM backend",
+  "dependencies": {
+    "@sap/approuter": "^14"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  }
+}
+

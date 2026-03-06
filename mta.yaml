@@ -1,0 +1,91 @@
+# _schema-version: 3.3.0
+# ID: project_management
+# version: 0.0.1
+# description: "An SAP Fiori application."
+# parameters:
+#   enable-parallel-deployments: true
+# build-parameters:
+#   before-all:
+#     - builder: custom
+#       commands:
+#         - npm ci
+#         - npx cds build --production
+# modules:
+#   - name: project_management-srv
+#     type: nodejs
+#     path: gen/srv
+#     parameters:
+#       instances: 1
+#       buildpack: nodejs_buildpack
+#     build-parameters:
+#       builder: npm-ci
+#     provides:
+#       - name: srv-api # required by consumers of CAP services (e.g. approuter)
+#         properties:
+#           srv-url: ${default-url}
+#     requires:
+#       []
+
+# resources:
+#   []
+
+
+
+_schema-version: 3.3.0
+ID: project_management
+version: 0.0.1
+description: "An SAP Fiori application."
+parameters:
+  enable-parallel-deployments: true
+ 
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm install
+ 
+# modules:
+#   - name: zvsui_viewer-ui
+#     type: html5
+#     path: webapp
+#     build-parameters:
+#       builder: custom
+#       commands:
+#         - npm install
+#         - npm run build
+ 
+modules:
+  - name: project_management-ui
+    type: html5
+    path: webapp
+    parameters:
+      buildpack: staticfile_buildpack
+      random-route: true
+    build-parameters:
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+
+  - name: project_management-approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      memory: 256M
+      disk-quota: 256M
+    properties:
+      destinations: >
+        [
+          {
+            "name": "project-management-capm",
+            "url": "https://org-build-stefbuildjs-build-project-management-capm-srv.cfapps.us10-001.hana.ondemand.com",
+            "forwardAuthToken": false
+          },
+          {
+            "name": "project-management-ui",
+            "url": "https://org-build-stefbuildjs-build-project-management-ui.cfapps.us10-001.hana.ondemand.com",
+            "forwardAuthToken": false
+          }
+        ]
+
+resources: []

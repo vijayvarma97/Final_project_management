@@ -1,0 +1,248 @@
+<mvc:View controllerName="projectmanagement.controller.View1"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    displayBlock="true">
+    
+    <Page id="page" showHeader="false" class="customPageBackground">
+        
+        <HBox class="customTopBar" alignItems="Center" justifyContent="SpaceBetween">
+            <HBox alignItems="Center">
+                <core:Icon src="sap-icon://stack" class="headerIcon sapUiSmallMarginEnd"/>
+                <Title text="SAP Fiori Prototype" class="headerTitle"/>
+            </HBox>
+            <Avatar initials="JD" displaySize="XS" class="headerAvatar" />
+        </HBox>
+
+        <HBox class="customSubHeader" alignItems="Center" justifyContent="SpaceBetween" wrap="Wrap">
+            <VBox class="sapUiSmallMarginBottom">
+                <Title text="Enterprise Project &amp; Resource Management" class="subHeaderTitle"/>
+                <Text text="Manage definitions, price profiles, and budget projections." class="subHeaderSubtitle"/>
+            </VBox>
+            <Button text="+ Allocate Resource" press="onAddAllocation" class="customPrimaryBtn sapUiTinyMarginBottom"/>
+        </HBox>
+
+        <VBox class="customContentArea">
+            <IconTabBar id="idIconTabBar" class="customTabs" headerBackgroundDesign="Transparent" headerMode="Inline">
+                <items>
+                    
+                    <IconTabFilter text="Projections &amp; Reports" icon="sap-icon://bar-chart">
+                        <VBox class="tableWrapper" spacing="Large">
+                            
+                            <HBox wrap="Wrap" justifyContent="SpaceBetween" class="kpiContainer">
+                                <VBox class="kpiCard borderBlue">
+                                    <Text text="Total Portfolio Budget" class="kpiTitle"/>
+                                    <Title text="{path: '/analytics/summary/totalBudget', formatter: '.formatCurrency'}" class="kpiValue"/>
+                                </VBox>
+                                <VBox class="kpiCard borderPurple">
+                                    <Text text="Total Consumed Cost" class="kpiTitle"/>
+                                    <Title text="{path: '/analytics/summary/totalCost', formatter: '.formatCurrency'}" class="kpiValue"/>
+                                    <Text text="{parts: [{path: '/analytics/summary/budgetConsumption'}], formatter: 'sap.ui.core.format.NumberFormat.getFloatInstance({maxFractionDigits: 1}).format'}% Consumed" class="{= ${/analytics/summary/budgetConsumption} > 100 ? 'kpiSubError' : 'kpiSubText'}" />
+                                </VBox>
+                                <VBox class="kpiCard borderTeal">
+                                    <Text text="Total Resource Capacity" class="kpiTitle"/>
+                                    <Title text="{/analytics/summary/totalCapacity} hrs" class="kpiValue"/>
+                                </VBox>
+                                <VBox class="kpiCard borderOrange">
+                                    <Text text="Total Allocated Hours" class="kpiTitle"/>
+                                    <Title text="{/analytics/summary/totalAllocatedHours} hrs" class="kpiValue"/>
+                                    <Text text="{parts: [{path: '/analytics/summary/hoursUtilization'}], formatter: 'sap.ui.core.format.NumberFormat.getFloatInstance({maxFractionDigits: 1}).format'}% Utilized" class="{= ${/analytics/summary/hoursUtilization} > 100 ? 'kpiSubError' : 'kpiSubText'}" />
+                                </VBox>
+                            </HBox>
+
+                            <HBox class="filterBox" alignItems="End" wrap="Wrap">
+                                <VBox class="sapUiSmallMarginEnd">
+                                    <Label text="Filter by Project" class="filterLabel"/>
+                                    <Select items="{/projects}" selectedKey="{/filters/projectId}" change="onFilterChange" width="200px" forceSelection="false">
+                                        <core:Item key="{id}" text="{name}" />
+                                    </Select>
+                                </VBox>
+                                <VBox class="sapUiSmallMarginEnd">
+                                    <Label text="Filter by Resource" class="filterLabel"/>
+                                    <Select items="{/resources}" selectedKey="{/filters/resourceId}" change="onFilterChange" width="200px" forceSelection="false">
+                                        <core:Item key="{id}" text="{name}" />
+                                    </Select>
+                                </VBox>
+                                <Button text="Clear Filters" press="onClearFilters" type="Transparent" class="clearBtn"/>
+                            </HBox>
+
+                            <Panel backgroundDesign="Solid" class="customPanel">
+                                <headerToolbar>
+                                    <Toolbar height="3rem" style="Clear">
+                                        <core:Icon src="sap-icon://line-chart" class="sapUiTinyMarginEnd lightText"/>
+                                        <Title text="Projections by Project" class="tableTitle"/>
+                                    </Toolbar>
+                                </headerToolbar>
+                                <Table items="{/analytics/projectionsByProject}" class="customTable">
+                                    <columns>
+                                        <Column><Text text="Project" class="colText"/></Column>
+                                        <Column demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Active Resources" class="colText"/></Column>
+                                        <Column hAlign="End"><Text text="Total Budget" class="colText"/></Column>
+                                        <Column hAlign="End" demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Consumed Cost" class="colText"/></Column>
+                                        <Column hAlign="End"><Text text="Remaining" class="colText"/></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem vAlign="Middle">
+                                            <cells>
+                                                <VBox><Text text="{name}" class="boldText" /><Text text="{id}" class="lightText"/></VBox>
+                                                <Text text="{resourceCount} resources" class="lightText" />
+                                                <Text text="{path: 'budget', formatter: '.formatCurrency'}" class="boldText" />
+                                                <Text text="{path: 'allocatedCost', formatter: '.formatCurrency'}" class="lightText" />
+                                                <ObjectStatus text="{path: 'remaining', formatter: '.formatCurrency'}" state="{statusState}" icon="{= ${statusState} === 'Success' ? 'sap-icon://sys-enter-2' : 'sap-icon://alert'}" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </Panel>
+
+                            <Panel backgroundDesign="Solid" class="customPanel">
+                                <headerToolbar>
+                                    <Toolbar height="3rem" style="Clear">
+                                        <core:Icon src="sap-icon://employee-group" class="sapUiTinyMarginEnd lightText"/>
+                                        <Title text="Projections by Resource" class="tableTitle"/>
+                                    </Toolbar>
+                                </headerToolbar>
+                                <Table items="{/analytics/projectionsByResource}" class="customTable">
+                                    <columns>
+                                        <Column><Text text="Resource" class="colText"/></Column>
+                                        <Column demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Allocated Hours" class="colText"/></Column>
+                                        <Column hAlign="Center"><Text text="Status" class="colText"/></Column>
+                                        <Column hAlign="End" demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Projected Cost" class="colText"/></Column>
+                                        <Column width="14rem" demandPopin="true" minScreenWidth="Desktop" popinDisplay="Block"><Text text="Timeline (2080 hrs)" class="colText"/></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem vAlign="Middle">
+                                            <cells>
+                                                <VBox><Text text="{name}" class="boldText" /><Text text="{role}" class="lightText"/></VBox>
+                                                <VBox>
+                                                    <Text text="{totalHours} hrs total" class="boldText" />
+                                                    <HBox class="sapUiTinyMarginTop textXs">
+                                                        <Text text="{totalStandardHours} std" class="lightText" />
+                                                        <Text text=" / " class="lightText sapUiTinyMarginBeginEnd" />
+                                                        <Text text="{totalWeekendHours} wkd" class="{= ${totalWeekendHours} > 0 ? 'textRed' : 'lightText'}" />
+                                                    </HBox>
+                                                </VBox>
+                                                <ObjectStatus text="{statusText}" state="{statusState}" inverted="true" class="customStatusPill" />
+                                                <Text text="{path: 'totalBilled', formatter: '.formatCurrency'}" class="customBlueText" />
+                                                <VBox width="100%">
+                                                    <HBox width="100%" class="timelineBarBg" items="{allocationsBreakdown}">
+                                                        <items>
+                                                            <VBox class="chartSegment">
+                                                                <customData>
+                                                                    <core:CustomData key="barcolor" value="{colorKey}" writeToDom="true" />
+                                                                </customData>
+                                                                <layoutData>
+                                                                    <FlexItemData baseSize="{percentage}" growFactor="0" shrinkFactor="0"/>
+                                                                </layoutData>
+                                                            </VBox>
+                                                        </items>
+                                                    </HBox>
+                                                    <HBox justifyContent="SpaceBetween" width="100%" class="sapUiTinyMarginTop">
+                                                        <Text text="0" class="timelineLabel" />
+                                                        <Text text="{totalHours}" class="timelineLabel" />
+                                                        <Text text="2080" class="timelineLabel" />
+                                                    </HBox>
+                                                </VBox>
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </Panel>
+                        </VBox>
+                    </IconTabFilter>
+
+                    <IconTabFilter text="Resources" icon="sap-icon://group">
+                        <VBox class="tableWrapper">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center" class="tableHeaderBar">
+                                <Title text="Resources &amp; Price Profiles" class="tableTitle"/>
+                                <Button text="Add Resource" press="onAddResource" class="customOutlineBtn"/>
+                            </HBox>
+                            <Table items="{/analytics/enrichedResources}" class="customTable">
+                                <columns>
+                                    <Column><Text text="Name" class="colText"/></Column>
+                                    <Column><Text text="Type" class="colText"/></Column>
+                                    <Column demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Roles" class="colText"/></Column>
+                                    <Column demandPopin="true" minScreenWidth="Desktop" popinDisplay="Inline"><Text text="Assigned Projects" class="colText"/></Column>
+                                    <Column hAlign="End" demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Cost Profile / Year" class="colText"/></Column>
+                                    <Column hAlign="End"><Text text="Rate" class="colText"/></Column>
+                                    <Column hAlign="Center" width="4rem"></Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem vAlign="Middle">
+                                        <cells>
+                                            <VBox><Text text="{name}" class="boldText"/><Text text="{id}" class="lightText"/></VBox>
+                                            <ObjectStatus text="{type}" state="{= ${type} === 'Contract' ? 'Warning' : 'Success'}" inverted="true" class="customStatusPill" />
+                                            <HBox items="{roles}" wrap="Wrap">
+                                                <Text text="{}" class="rolePill sapUiTinyMarginEnd" />
+                                            </HBox>
+                                            <Text text="{assignedProjects}" class="lightText"/>
+                                            <VBox alignItems="End">
+                                                <Text text="{path: 'salary', formatter: '.formatCurrency'} Base" class="boldText" />
+                                                <Text text="+ {parts: [{path: 'officeCost'}, {path: 'overheadCost'}], formatter: 'sap.ui.core.format.NumberFormat.getFloatInstance().format'} Extra" visible="{= ${officeCost} + ${overheadCost} > 0}" class="lightText textXs" />
+                                            </VBox>
+                                            <Text text="{path: 'hourlyRate', formatter: '.formatCurrency'}/hr" class="customBlueText" />
+                                            <HBox justifyContent="Center">
+                                                <core:Icon src="sap-icon://edit" class="actionEdit" press="onEditResource" />
+                                                <core:Icon src="sap-icon://delete" class="actionDelete sapUiSmallMarginBegin" press="onDeleteResource" />
+                                            </HBox>
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
+                        </VBox>
+                    </IconTabFilter>
+
+                    <IconTabFilter text="Projects" icon="sap-icon://folder-blank">
+                        <VBox class="tableWrapper">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center" class="tableHeaderBar">
+                                <Title text="Project Portfolio" class="tableTitle"/>
+                                <Button text="Create Project" press="onAddProject" class="customOutlineBtn"/>
+                            </HBox>
+                            <Table items="{/analytics/enrichedProjects}" class="customTable">
+                                <columns>
+                                    <Column><Text text="Project ID" class="colText"/></Column>
+                                    <Column><Text text="Project Name" class="colText"/></Column>
+                                    <Column demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Timeline" class="colText"/></Column>
+                                    <Column demandPopin="true" minScreenWidth="Desktop" popinDisplay="Inline"><Text text="Req. Roles" class="colText"/></Column>
+                                    <Column demandPopin="true" minScreenWidth="Desktop" popinDisplay="Inline"><Text text="Allocated Resources" class="colText"/></Column>
+                                    <Column hAlign="End" demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Actual Costs" class="colText"/></Column>
+                                    <Column hAlign="End"><Text text="Budget" class="colText"/></Column>
+                                    <Column hAlign="Center" width="4rem"></Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem vAlign="Middle">
+                                        <cells>
+                                            <Text text="{id}" class="boldText" />
+                                            <Text text="{name}" class="lightText"/>
+                                            
+                                            <VBox>
+                                                <Text text="{path: 'startDate', formatter: '.formatDate'} - {path: 'endDate', formatter: '.formatDate'}" class="textXs" />
+                                                <Text text="{standardCapacity} std hrs" class="textXs customBlueText sapUiTinyMarginTop" />
+                                            </VBox>
+                                            <VBox items="{requiredRoles}">
+                                                <Text text="• {count}x {role}" class="lightText textXs" />
+                                            </VBox>
+                                            <VBox items="{assignedResources}">
+                                                <HBox class="allocPill sapUiTinyMarginBottom">
+                                                    <Text text="{name} - {role} ({hours}h)" class="textXs" />
+                                                    <Text text="+{weekendHrs}h wkd" visible="{= ${weekendHrs} > 0}" class="textXs textRed sapUiTinyMarginBegin" />
+                                                </HBox>
+                                            </VBox>
+                                            <Text text="{path: 'actualCost', formatter: '.formatCurrency'}" class="customBlueText" />
+                                            <Text text="{path: 'budget', formatter: '.formatCurrency'}" class="boldText" />
+                                            <HBox justifyContent="Center">
+                                                <core:Icon src="sap-icon://edit" class="actionEdit" press="onEditProject" />
+                                                <core:Icon src="sap-icon://delete" class="actionDelete sapUiSmallMarginBegin" press="onDeleteProject" />
+                                            </HBox>
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
+                        </VBox>
+                    </IconTabFilter>
+
+                </items>
+            </IconTabBar>
+        </VBox>
+    </Page>
+</mvc:View>

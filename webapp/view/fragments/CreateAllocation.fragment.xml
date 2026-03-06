@@ -1,0 +1,58 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.layout">
+    <Dialog id="CreateAllocationDialog" title="Allocate Resource to Project" contentWidth="500px">
+        <content>
+            <VBox class="sapUiSmallMargin">
+                <Label text="Select Project" required="true" class="customLabel sapUiTinyMarginBottom"/>
+                
+                <ComboBox selectedKey="{/newAllocation/projectId}" selectionChange="onAllocProjectChange" items="{/projects}" width="100%" class="customInput sapUiSmallMarginBottom" placeholder="Select a project...">
+                    <core:Item key="{id}" text="{name} ({id})" />
+                </ComboBox>
+
+                <Label text="Resource Slots" required="true" class="customLabel sapUiTinyMarginBottom" />
+
+                <VBox class="emptySlotsContainer" visible="{= ${/newAllocation/projectId} === '' }" alignItems="Center" justifyContent="Center">
+                    <Text text="Select a project first to view resource slots." class="emptySlotsText" />
+                </VBox>
+
+                <VBox class="slotsOuterContainer" visible="{= ${/newAllocation/projectId} !== '' }">
+                    
+                    <VBox class="capacityInfoBox sapUiSmallMarginBottom" visible="{= ${/selectedProjectCapacity} > 0 }">
+                        <HBox>
+                            <core:Icon src="sap-icon://information" class="infoIconColor sapUiTinyMarginEnd sapUiTinyMarginTop" />
+                            <VBox>
+                                <Text text="Project Capacity: {/selectedProjectCapacity} standard hours." class="boldText infoTextColor" />
+                                <Text text="Calculated as 8 hrs/day (excluding weekends) from {path: '/selectedProjectStartDate', formatter: '.formatDate'} to {path: '/selectedProjectEndDate', formatter: '.formatDate'}. Hours assigned beyond this are marked as weekend/overhead." class="infoTextColor textXs sapUiTinyMarginTop" />
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox items="{/newAllocationSlots}">
+                        <HBox class="slotRowBox sapUiTinyMarginBottom" alignItems="Center" width="100%">
+                            <ComboBox selectedKey="{role}" items="{path: '/availableRoles', templateShareable: true}" visible="{customRole}" class="customInput sapUiTinyMarginEnd" width="8rem" placeholder="Role...">
+                                <!-- Bind to the current simple role value (same pattern as other fragments) -->
+                                <core:Item key="{}" text="{}" />
+                            </ComboBox>
+                            
+                            <HBox class="greyRolePill sapUiTinyMarginEnd" visible="{= !${customRole} }" width="8rem" alignItems="Center">
+                                <Text text="{role}" class="boldText rolePillText" wrapping="false" />
+                            </HBox>
+                            
+                            <Select selectedKey="{resourceId}" items="{path: '/resources', templateShareable: true}" forceSelection="false" class="customInput sapUiTinyMarginEnd">
+                                <layoutData><FlexItemData growFactor="1" /></layoutData>
+                                <core:Item key="{id}" text="{name} ({path: 'hourlyRate', formatter: '.formatCurrency'}/hr)" />
+                            </Select>
+                            
+                            <Input value="{hours}" type="Number" class="customInput sapUiTinyMarginEnd" width="4rem" placeholder="Hrs" />
+                            
+                            <Button icon="sap-icon://delete" type="Transparent" press="onRemoveAllocSlot" visible="{customRole}" class="actionDelete"/>
+                        </HBox>
+                    </VBox>
+                    
+                    <Button text="+ Add Additional Slot" press="onAddAllocSlot" type="Transparent" class="lightBlueTextBtn sapUiTinyMarginTop" />
+                </VBox>
+            </VBox>
+        </content>
+        <beginButton><Button text="Allocate" press=".onSaveAllocation" class="customPrimaryBtn"/></beginButton>
+        <endButton><Button text="Cancel" press="onCloseDialog" type="Transparent" class="customCancelBtn"/></endButton>
+    </Dialog>
+</core:FragmentDefinition>

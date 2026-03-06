@@ -1,0 +1,60 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.layout">
+    <Dialog id="CreateResourceDialog" title="{= ${/editingResourceId} ? 'Edit Resource' : 'Define New Resource' }" contentWidth="450px">
+        <content>
+            <VBox class="sapUiSmallMargin">
+                
+                <layout:Grid defaultSpan="L6 M6 S12" class="sapUiNoMarginTop">
+                    <VBox>
+                        <Label text="Resource Name" required="true" class="customLabel"/>
+                        <Input value="{/newResource/name}" placeholder="e.g. John Doe" class="customInput" />
+                    </VBox>
+                    <VBox>
+                        <Label text="Resource Type" required="true" class="customLabel"/>
+                        <Select selectedKey="{/newResource/type}" change="onResTypeChange" width="100%" class="customInput">
+                            <core:Item key="Full Time" text="Full Time" />
+                            <core:Item key="Contract" text="Contract" />
+                        </Select>
+                    </VBox>
+                </layout:Grid>
+                
+                <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginTop sapUiTinyMarginBottom">
+                    <Label text="Roles / Titles" required="true" class="customLabel"/>
+                    <HBox alignItems="Center">
+                        <Input value="{/newCustomRole}" placeholder="New Role..." width="6.5rem" class="customInput textXsInput sapUiTinyMarginEnd" />
+                        <Button text="+" press="onAddCustomRole" class="darkGreyBtn" />
+                    </HBox>
+                </HBox>
+
+                <VBox class="rolesCheckboxContainer sapUiSmallMarginBottom">
+                    <HBox items="{/availableRoles}" wrap="Wrap" class="rolesWrapBox">
+                        <items>
+                            <CheckBox 
+                                text="{}" 
+                                selected="{parts: [{path: ''}, {path: '/newResource/roles'}], formatter: '.isRoleSelected'}" 
+                                select="onRoleSelectionChange" 
+                                class="customRoleCheckBox" />
+                        </items>
+                    </HBox>
+                </VBox>
+
+                <VBox class="sapUiSmallMarginBottom">
+                    <Label text="Yearly Base ($)" required="true" class="customLabel"/>
+                    <Input value="{/newResource/salary}" type="Number" placeholder="Salary..." class="customInput" change="onCalcHourlyRate" />
+                </VBox>
+
+                <VBox class="sapUiSmallMarginBottom">
+                    <Label text="Office Cost ($)" class="customLabel"/>
+                    <Input value="{/newResource/officeCost}" type="Number" placeholder="Office..." class="customInput" change="onCalcHourlyRate" enabled="{= ${/newResource/type} !== 'Contract' }" />
+                </VBox>
+
+                <VBox class="sapUiSmallMarginBottom">
+                    <Label text="Overhead ($)" class="customLabel"/>
+                    <Input value="{/newResource/overheadCost}" type="Number" placeholder="Overhead..." class="customInput" change="onCalcHourlyRate" enabled="{= ${/newResource/type} !== 'Contract' }" />
+                </VBox>
+
+            </VBox>
+        </content>
+        <beginButton><Button text="{= ${/editingResourceId} ? 'Update' : 'Save' }" press="onSaveResource" class="customPrimaryBtn" /></beginButton>
+        <endButton><Button text="Cancel" press="onCloseDialog" type="Transparent" class="customCancelBtn"/></endButton>
+    </Dialog>
+</core:FragmentDefinition>

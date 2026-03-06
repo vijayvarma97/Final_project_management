@@ -1,0 +1,19 @@
+{
+  "welcomeFile": "/index.html",
+  "authenticationMethod": "none",
+  "routes": [
+    {
+      "source": "^/browse/(.*)$",
+      "target": "/browse/$1",
+      "destination": "project-management-capm",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^(.*)$",
+      "target": "$1",
+      "destination": "project-management-ui",
+      "authenticationType": "none"
+    }
+  ]
+}
+

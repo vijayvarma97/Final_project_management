@@ -3,19 +3,19 @@
         <content>
             <VBox class="sapUiSmallMargin">
                 
-                <layout:Grid defaultSpan="L6 M6 S12" class="sapUiNoMarginTop">
-                    <VBox>
+                <HBox width="100%" class="sapUiSmallMarginBottom">
+                    <VBox width="50%" class="sapUiTinyMarginEnd">
                         <Label text="Resource Name" required="true" class="customLabel"/>
                         <Input value="{/newResource/name}" placeholder="e.g. John Doe" class="customInput" />
                     </VBox>
-                    <VBox>
+                    <VBox width="50%" class="sapUiTinyMarginBegin">
                         <Label text="Resource Type" required="true" class="customLabel"/>
                         <Select selectedKey="{/newResource/type}" change="onResTypeChange" width="100%" class="customInput">
                             <core:Item key="Full Time" text="Full Time" />
                             <core:Item key="Contract" text="Contract" />
                         </Select>
                     </VBox>
-                </layout:Grid>
+                </HBox>
                 
                 <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginTop sapUiTinyMarginBottom">
                     <Label text="Roles / Titles" required="true" class="customLabel"/>
@@ -26,19 +26,17 @@
                 </HBox>
 
                 <VBox class="rolesCheckboxContainer sapUiSmallMarginBottom">
-                    <HBox items="{/availableRoles}" wrap="Wrap" class="rolesWrapBox">
-                        <items>
-                            <CheckBox 
-                                text="{}" 
-                                selected="{parts: [{path: ''}, {path: '/newResource/roles'}], formatter: '.isRoleSelected'}" 
-                                select="onRoleSelectionChange" 
-                                class="customRoleCheckBox" />
-                        </items>
-                    </HBox>
+                    <MultiComboBox 
+                        items="{/availableRoles}" 
+                        selectedKeys="{/newResource/roles}" 
+                        placeholder="Select Roles..." 
+                        class="customInput">
+                        <core:Item key="{}" text="{}" />
+                    </MultiComboBox>
                 </VBox>
 
                 <VBox class="sapUiSmallMarginBottom">
-                    <Label text="Yearly Base ($)" required="true" class="customLabel"/>
+                    <Label text="Yearly Base ($)" class="customLabel"/>
                     <Input value="{/newResource/salary}" type="Number" placeholder="Salary..." class="customInput" change="onCalcHourlyRate" />
                 </VBox>
 

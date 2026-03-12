@@ -1,5 +1,5 @@
 <core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core" xmlns:layout="sap.ui.layout">
-    <Dialog id="CreateProjectDialog" title="{= ${/editingProjectId} ? 'Edit Project' : 'Define New Project' }" contentWidth="480px" contentHeight="480px">
+    <Dialog id="CreateProjectDialog" title="{= ${/editingProjectId} ? 'Edit Project' : 'Define New Project' }" contentWidth="480px">
         <content>
             <ScrollContainer height="100%" vertical="true" horizontal="false">
                 <VBox class="sapUiSmallMargin">
@@ -23,6 +23,13 @@
                         <DatePicker value="{/newProject/endDate}" valueFormat="yyyy-MM-dd" displayFormat="MM/dd/yyyy" placeholder="mm/dd/yyyy" class="customInput w-full" />
                     </VBox>
                 </layout:Grid>
+
+                <VBox class="sapUiSmallMarginTop">
+                    <Label text="Templates" class="customLabel" />
+                    <Select items="{path: '/templates'}" selectedKey="{/newProject/templateId}" forceSelection="false" width="100%" class="customInput">
+                        <core:Item key="{id}" text="{name}" />
+                    </Select>
+                </VBox>
 
                 <VBox class="customDivider sapUiSmallMarginTopBottom" width="100%"></VBox>
 

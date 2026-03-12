@@ -1,66 +1,155 @@
 /* General Background */
-.customPageBackground { background-color: #f3f4f6 !important; }
+.customPageBackground {
+    background-color: #f3f4f6 !important;
+}
 
 /* Header Styling */
-.customTopBar { background-color: #354a5f; padding: 0 1rem; height: 3rem; }
-.headerIcon { color: white !important; font-size: 1.25rem !important; }
-.headerTitle { color: white !important; font-weight: 600 !important; font-size: 1rem !important; }
-.headerAvatar { background-color: rgba(255,255,255,0.2) !important; color: white !important; border: none !important; }
+.customTopBar {
+    background-color: #354a5f;
+    padding: 0 1rem;
+    height: 3rem;
+}
+
+.headerIcon {
+    color: white !important;
+    font-size: 1.25rem !important;
+}
+
+.headerTitle {
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+}
+
+.headerAvatar {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border: none !important;
+}
 
 /* Subheader Styling */
-.customSubHeader { 
-    background-color: white; 
-    padding: 1.5rem 2rem 1.5rem 2rem; 
+.customSubHeader {
+    background-color: white;
+    padding: 1.5rem 2rem 1.5rem 2rem;
     border-bottom: 1px solid #e5e7eb;
 }
-.subHeaderTitle { color: #32363a !important; font-weight: bold !important; font-size: 1.5rem !important; }
-.subHeaderSubtitle { color: #6b7280 !important; font-size: 0.875rem !important; margin-top: 0.25rem; }
 
-/* The big Allocate Button */
-.customPrimaryBtn .sapMBtnInner { 
-    background-color: #0070f2 !important; 
-    border-color: #0070f2 !important; 
-    color: white !important; 
-    font-weight: bold !important; 
-    border-radius: 4px;
-    padding: 0 1.5rem !important;
-    height: 2.5rem !important; 
-    line-height: 2.5rem !important;
+.subHeaderTitle {
+    color: #32363a !important;
+    font-weight: bold !important;
+    font-size: 1.5rem !important;
 }
+
+.subHeaderSubtitle {
+    color: #6b7280 !important;
+    font-size: 0.875rem !important;
+    margin-top: 0.25rem;
+}
+
+/* The big Allocate / Save Button */
+.customPrimaryBtn .sapMBtnInner {
+    background-color: #0070f2 !important;
+    border-color: #0070f2 !important;
+    color: white !important;
+    font-weight: bold !important;
+    border-radius: 6px !important;
+    padding: 0 1.5rem !important;
+    height: 2.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+}
+
+.customPrimaryBtn .sapMBtnContent,
+.customCancelBtn .sapMBtnContent,
+.darkGreyBtn .sapMBtnContent,
+.lightBlueBtn .sapMBtnContent {
+    line-height: normal !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
 .customPrimaryBtn:hover .sapMBtnInner {
     background-color: #005cc8 !important;
 }
 
 /* Tabs & Tables */
-.customContentArea { padding: 1.5rem; }
-.customTabs { 
-    background-color: white !important; 
-    border-radius: 8px; 
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
-    border: 1px solid #e5e7eb; 
+.customContentArea {
+    padding: 1.5rem;
 }
+
+.customTabs {
+    background-color: white !important;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+}
+
 .sapMITBInline .sapMITBText {
     font-size: 1rem !important;
     font-weight: 600 !important;
 }
+
 .sapMITBItem {
     padding: 0 1.25rem !important;
 }
 
-.tableWrapper { padding: 1rem; }
-.tableHeaderBar { margin-bottom: 1rem; }
-.tableTitle { font-weight: bold !important; font-size: 1.25rem !important; color: #111827 !important; }
-.customOutlineBtn .sapMBtnInner { color: #0070f2 !important; border: 1px solid #0070f2 !important; background: transparent !important; border-radius: 4px; }
+.tableWrapper {
+    padding: 1rem;
+}
+
+.tableHeaderBar {
+    margin-bottom: 1rem;
+}
+
+.tableTitle {
+    font-weight: bold !important;
+    font-size: 1.25rem !important;
+    color: #111827 !important;
+}
+
+.customOutlineBtn .sapMBtnInner {
+    color: #0070f2 !important;
+    border: 1px solid #0070f2 !important;
+    background: transparent !important;
+    border-radius: 4px;
+}
 
 /* Table Text & Icons */
-.colText { font-weight: 600 !important; color: #4b5563 !important; }
-.boldText { font-weight: bold !important; color: #111827 !important; }
-.lightText { color: #374151 !important; }
-.actionEdit { color: #0070f2 !important; cursor: pointer; font-size: 1.1rem !important; }
-.actionDelete { color: #dc2626 !important; cursor: pointer; font-size: 1.1rem !important; }
+.colText {
+    font-weight: 600 !important;
+    color: #4b5563 !important;
+}
+
+.boldText {
+    font-weight: bold !important;
+    color: #111827 !important;
+}
+
+.lightText {
+    color: #374151 !important;
+}
+
+.actionEdit {
+    color: #0070f2 !important;
+    cursor: pointer;
+    font-size: 1.1rem !important;
+}
+
+.actionDelete {
+    color: #dc2626 !important;
+    cursor: pointer;
+    font-size: 1.1rem !important;
+}
 
 /* Panels for Tab 1 */
-.customPanel { border: 1px solid #e5e7eb !important; border-radius: 8px !important; overflow: hidden; }
+.customPanel {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}
 
 /* Blue Amount Text */
 .customBlueText {
@@ -77,155 +166,377 @@
 }
 
 /* --- KPI Cards --- */
-.kpiContainer { gap: 1rem; margin-bottom: 1.5rem; }
-.kpiCard { 
-    background: white; border-radius: 8px; padding: 1rem; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;
-    border-left-width: 4px !important; flex: 1; min-width: 200px;
+.kpiContainer {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
-.borderBlue { border-left-color: #0070f2 !important; }
-.borderPurple { border-left-color: #a855f7 !important; }
-.borderTeal { border-left-color: #14b8a6 !important; }
-.borderOrange { border-left-color: #f97316 !important; }
 
-.kpiTitle { font-size: 0.875rem !important; font-weight: 600 !important; color: #6b7280 !important; }
-.kpiValue { font-size: 1.5rem !important; font-weight: bold !important; color: #1f2937 !important; margin-top: 0.25rem !important; }
-.kpiSubText { font-size: 0.75rem !important; font-weight: 600 !important; color: #6b7280 !important; }
-.kpiSubError { font-size: 0.75rem !important; font-weight: 600 !important; color: #ef4444 !important; }
+.kpiCard {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    border-left-width: 4px !important;
+    flex: 1;
+    min-width: 200px;
+}
+
+.borderBlue {
+    border-left-color: #0070f2 !important;
+}
+
+.borderPurple {
+    border-left-color: #a855f7 !important;
+}
+
+.borderTeal {
+    border-left-color: #14b8a6 !important;
+}
+
+.borderOrange {
+    border-left-color: #f97316 !important;
+}
+
+.kpiTitle {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: #6b7280 !important;
+}
+
+.kpiValue {
+    font-size: 1.5rem !important;
+    font-weight: bold !important;
+    color: #1f2937 !important;
+    margin-top: 0.25rem !important;
+}
+
+.kpiSubText {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: #6b7280 !important;
+}
+
+.kpiSubError {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: #ef4444 !important;
+}
 
 /* Filters */
-.filterBox { background: white; border-radius: 8px; padding: 1rem; border: 1px solid #e5e7eb; margin-bottom: 1.5rem; gap: 1rem; }
-.filterLabel { font-size: 0.75rem !important; font-weight: 600 !important; color: #4b5563 !important; }
-.clearBtn .sapMBtnInner { color: #0070f2 !important; font-weight: 600 !important; }
+.filterBox {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+/* Inner Projection Sub-Tabs */
+.innerProjectionsTabs {
+    margin-top: 0.5rem;
+}
+.innerProjectionsTabs .sapMITBHead {
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0;
+}
+
+.filterLabel {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: #4b5563 !important;
+}
+
+.clearBtn .sapMBtnInner {
+    color: #0070f2 !important;
+    font-weight: 600 !important;
+}
 
 /* Text Utilities */
-.textXs { font-size: 0.75rem !important; }
-.textRed { color: #ef4444 !important; font-weight: bold !important; }
+.textXs {
+    font-size: 0.75rem !important;
+}
+
+.textRed {
+    color: #ef4444 !important;
+    font-weight: bold !important;
+}
 
 /* Pills */
-.rolePill { 
-    background-color: #eff6ff; color: #1d4ed8 !important; border: 1px solid #bfdbfe; 
-    border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.75rem !important; 
+.rolePill {
+    background-color: #eff6ff;
+    color: #1d4ed8 !important;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.75rem !important;
 }
+
 .allocPill {
-    background-color: #eef2ff; border: 1px solid #e0e7ff; 
-    border-radius: 4px; padding: 0.1rem 0.4rem; color: #4338ca !important;
+    background-color: #eef2ff;
+    border: 1px solid #e0e7ff;
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    color: #4338ca !important;
 }
 
 /* --- Dialog Specific Styling --- */
 
-/* FIX: Make footer fully white, remove grey lines/shadows, and add bottom padding */
-.sapMDialog footer, 
+/* FIX: Make footer fully visible, remove grey lines/shadows, ensure buttons never clipped */
+.sapMDialog footer,
 .sapMDialog footer.sapMTB {
     height: auto !important;
-    padding-bottom: 1.5rem !important;
-    padding-right: 1.25rem !important;
-    padding-top: 0.5rem !important;
-    background-color: #ffffff !important; 
-    background-image: none !important; 
+    min-height: 3.5rem !important;
+    padding: 0.75rem 1.25rem 1rem 1.25rem !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
     border-top: none !important;
     box-shadow: none !important;
+    overflow: visible !important;
+}
+
+/* Prevent the dialog content section from clipping the footer */
+.sapMDialog > .sapMDialogSection {
+    overflow: visible !important;
+}
+
+/* Ensure the dialog scroll container doesn't eat into footer space */
+.sapMDialog .sapMDialogScroll {
+    padding-bottom: 0.5rem !important;
 }
 
 /* FIX: Force a gap between the buttons in the dialog footer */
 .sapMDialog footer .sapMBtn {
     margin-left: 0.75rem !important;
+    overflow: visible !important;
 }
 
-.customLabel { font-weight: 600 !important; color: #4b5563 !important; }
-.italicText { font-style: italic !important; color: #6b7280 !important;}
-.w-full { width: 100% !important; }
-
-.customDivider { border-top: 1px solid #e5e7eb; height: 1px; }
-
-.customInput .sapMInputBaseInner { border-radius: 4px !important; border: 1px solid #d1d5db !important; }
-.customInput .sapMInputBaseInner:focus { border-color: #0070f2 !important; }
-
-.textXsInput .sapMInputBaseInner { font-size: 0.75rem !important; padding: 0 0.5rem !important; }
-
-.darkGreyBtn .sapMBtnInner { 
-    background-color: #4b5563 !important; color: white !important; 
-    border: none !important; border-radius: 4px; padding: 0 0.6rem !important; font-weight: bold !important;
+/* Ensure the inner wrapper of footer buttons is never clipped */
+.sapMDialog footer .sapMBtnInner {
+    overflow: visible !important;
 }
-.darkGreyBtn:hover .sapMBtnInner { background-color: #374151 !important; }
 
-.lightBlueBtn .sapMBtnInner { 
-    color: #0070f2 !important; background-color: #eff6ff !important; 
-    border: 1px solid transparent !important; border-radius: 4px; padding: 0 0.6rem !important; font-weight: 600 !important; 
+.customLabel {
+    font-weight: 600 !important;
+    color: #4b5563 !important;
 }
-.lightBlueBtn:hover .sapMBtnInner { background-color: #dbeafe !important; }
 
-.customCancelBtn .sapMBtnInner { color: #0070f2 !important; font-weight: 600 !important; border: none !important; }
+.italicText {
+    font-style: italic !important;
+    color: #6b7280 !important;
+}
+
+.w-full {
+    width: 100% !important;
+}
+
+.customDivider {
+    border-top: 1px solid #e5e7eb;
+    height: 1px;
+}
+
+.customInput .sapMInputBaseInner {
+    border-radius: 4px !important;
+    border: 1px solid #d1d5db !important;
+}
+
+.customInput .sapMInputBaseInner:focus {
+    border-color: #0070f2 !important;
+}
+
+.textXsInput .sapMInputBaseInner {
+    font-size: 0.75rem !important;
+    padding: 0 0.5rem !important;
+}
+
+.darkGreyBtn .sapMBtnInner {
+    background-color: #4b5563 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px;
+    padding: 0 0.6rem !important;
+    font-weight: bold !important;
+    height: 1.8rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.darkGreyBtn:hover .sapMBtnInner {
+    background-color: #374151 !important;
+}
+
+.lightBlueBtn .sapMBtnInner {
+    color: #0070f2 !important;
+    background-color: #eff6ff !important;
+    border: 1px solid transparent !important;
+    border-radius: 4px;
+    padding: 0 0.6rem !important;
+    font-weight: 600 !important;
+    height: 1.8rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.lightBlueBtn:hover .sapMBtnInner {
+    background-color: #dbeafe !important;
+}
+
+.customCancelBtn .sapMBtnInner {
+    color: #0070f2 !important;
+    font-weight: 600 !important;
+    border: 1px solid #d1d5db !important;
+    background-color: #f3f4f6 !important;
+    border-radius: 6px !important;
+    height: 2.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 1rem !important;
+    overflow: visible !important;
+}
 
 /* --- Resource Dialog Roles Container --- */
 .rolesCheckboxContainer {
-    background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px;
-    padding: 0.75rem; max-height: 150px; overflow-y: auto;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0.75rem;
+    max-height: 150px;
+    overflow-y: auto;
 }
-.rolesWrapBox { gap: 0.5rem; }
+
+.rolesWrapBox {
+    gap: 0.5rem;
+}
 
 /* Custom Checkbox Pill Styling */
 .customRoleCheckBox {
-    background-color: white !important; 
-    border: 1px solid #e5e7eb !important; 
+    background-color: white !important;
+    border: 1px solid #e5e7eb !important;
     border-radius: 4px !important;
-    padding: 0.35rem 0.75rem !important; 
-    margin: 0 !important; 
+    padding: 0.35rem 0.75rem !important;
+    margin: 0 !important;
     transition: all 0.2s;
     display: flex !important;
     align-items: center !important;
     gap: 0.5rem;
 }
-.customRoleCheckBox:hover { background-color: #f3f4f6 !important; }
-.customRoleCheckBox .sapMCbLabel { 
-    color: #374151 !important; 
-    font-size: 0.875rem !important; 
-    display: inline-block !important; 
+
+.customRoleCheckBox:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.customRoleCheckBox .sapMCbLabel {
+    color: #374151 !important;
+    font-size: 0.875rem !important;
+    display: inline-block !important;
     line-height: 1.2rem !important;
 }
-.customRoleCheckBox .sapMCbBg { 
-    position: static !important; 
-    margin: 0 !important; 
+
+.customRoleCheckBox .sapMCbBg {
+    position: static !important;
+    margin: 0 !important;
 }
-.customRoleCheckBox.sapMCbMarkChecked .sapMCbBg { background-color: #0070f2 !important; border-color: #0070f2 !important; }
+
+.customRoleCheckBox.sapMCbMarkChecked .sapMCbBg {
+    background-color: #0070f2 !important;
+    border-color: #0070f2 !important;
+}
 
 /* --- Allocation Dialog Styling --- */
 .slotsOuterContainer {
-    border: 1px solid #d1d5db; border-radius: 6px; padding: 0.75rem; background-color: #ffffff;
-    max-height: 400px; overflow-y: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .capacityInfoBox {
-    background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 0.75rem;
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    padding: 0.75rem;
 }
-.infoIconColor { color: #1e40af !important; font-size: 1.15rem !important;}
-.infoTextColor { color: #1e40af !important; }
 
-.slotsContainer { max-height: 300px; overflow-y: auto; overflow-x: hidden; padding-right: 4px; }
+.infoIconColor {
+    color: #1e40af !important;
+    font-size: 1.15rem !important;
+}
+
+.infoTextColor {
+    color: #1e40af !important;
+}
+
+.slotsContainer {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+}
+
 .slotRowBox {
-    background-color: #ffffff !important; border: 1px solid #e5e7eb !important; border-radius: 4px;
-    padding: 0.5rem; box-sizing: border-box;
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 4px;
+    padding: 0.5rem;
+    box-sizing: border-box;
 }
 
 .greyRolePill {
-    background-color: #f3f4f6 !important; border: 1px solid #e5e7eb !important; border-radius: 4px;
-    padding: 0 0.5rem; height: 2.5rem; box-sizing: border-box; overflow: hidden;
-}
-.greyRolePill .sapMText, .rolePillText {
-    line-height: 2.5rem !important; color: #374151 !important; text-overflow: ellipsis; overflow: hidden;
-    white-space: nowrap; width: 100%;
+    background-color: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 4px;
+    padding: 0 0.5rem;
+    height: 2.5rem;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
-.lightBlueTextBtn .sapMBtnInner { color: #0070f2 !important; font-weight: 600 !important; font-size: 0.85rem !important; padding: 0 !important; }
-.lightBlueTextBtn:hover .sapMBtnInner { text-decoration: underline !important; background: transparent !important; }
+.greyRolePill .sapMText,
+.rolePillText {
+    line-height: 2.5rem !important;
+    color: #374151 !important;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.lightBlueTextBtn .sapMBtnInner {
+    color: #0070f2 !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    padding: 0 !important;
+}
+
+.lightBlueTextBtn:hover .sapMBtnInner {
+    text-decoration: underline !important;
+    background: transparent !important;
+}
 
 /* Empty Allocation State Styling */
-.emptySlotsContainer { border: 1px solid #d1d5db; border-radius: 4px; background-color: #ffffff; padding: 3.5rem 1rem; }
-.emptySlotsText { color: #6b7280 !important; font-style: italic !important; font-size: 0.875rem !important; text-align: center; }
+.emptySlotsContainer {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background-color: #ffffff;
+    padding: 3.5rem 1rem;
+}
+
+.emptySlotsText {
+    color: #6b7280 !important;
+    font-style: italic !important;
+    font-size: 0.875rem !important;
+    text-align: center;
+}
 
 /* --- Fixed Timeline Chart Styling --- */
 .timelineBarBg {
-    display: flex !important; 
+    display: flex !important;
     flex-direction: row !important;
     background-color: #e5e7eb !important;
     height: 16px !important;
@@ -234,7 +545,9 @@
     width: 100% !important;
 }
 
-.timelineBarBg .sapMFlexItem { height: 16px !important; }
+.timelineBarBg .sapMFlexItem {
+    height: 16px !important;
+}
 
 .chartSegment {
     height: 16px !important;
@@ -243,14 +556,36 @@
     box-sizing: border-box !important;
 }
 
-.timelineBarBg .sapMFlexItem:last-child .chartSegment { border-right: none !important; }
+.timelineBarBg .sapMFlexItem:last-child .chartSegment {
+    border-right: none !important;
+}
 
-.chartSegment[data-barcolor="0"] { background-color: #3b82f6 !important; } /* Blue */
-.chartSegment[data-barcolor="1"] { background-color: #14b8a6 !important; } /* Teal */
-.chartSegment[data-barcolor="2"] { background-color: #8b5cf6 !important; } /* Purple */
-.chartSegment[data-barcolor="3"] { background-color: #f59e0b !important; } /* Orange */
+.chartSegment[data-barcolor="0"] {
+    background-color: #3b82f6 !important;
+}
 
-.timelineLabel { font-size: 0.75rem !important; color: #6b7280 !important; line-height: 1 !important; }
+/* Blue */
+.chartSegment[data-barcolor="1"] {
+    background-color: #14b8a6 !important;
+}
+
+/* Teal */
+.chartSegment[data-barcolor="2"] {
+    background-color: #8b5cf6 !important;
+}
+
+/* Purple */
+.chartSegment[data-barcolor="3"] {
+    background-color: #f59e0b !important;
+}
+
+/* Orange */
+
+.timelineLabel {
+    font-size: 0.75rem !important;
+    color: #6b7280 !important;
+    line-height: 1 !important;
+}
 
 /* =============================================
    RESPONSIVE: Mobile & Tablet Adjustments
@@ -261,18 +596,22 @@
     background-color: #f9fafb !important;
     padding: 0.25rem 0.5rem !important;
 }
+
 .customTable .sapMListTblSubRowCell {
     padding: 0.25rem 0.5rem !important;
 }
+
 .customTable .sapMListTblSubCntRow {
     padding: 0.15rem 0 !important;
 }
+
 .customTable .sapMListTblSubCntHdr {
     font-weight: 600 !important;
     color: #4b5563 !important;
     font-size: 0.75rem !important;
     min-width: 5rem;
 }
+
 .customTable .sapMListTblSubCntVal {
     color: #111827 !important;
     font-size: 0.8125rem !important;
@@ -280,35 +619,624 @@
 
 /* Tablet & Mobile adjustments (below 1024px) */
 @media screen and (max-width: 1024px) {
-    .customContentArea { padding: 0.75rem; }
-    .customSubHeader { padding: 1rem 1rem; }
-    .tableWrapper { padding: 0.5rem; }
-    .kpiContainer { gap: 0.5rem; }
-    .kpiCard { min-width: 140px; padding: 0.75rem; }
-    .kpiValue { font-size: 1.25rem !important; }
-    .filterBox { padding: 0.75rem; gap: 0.5rem; }
+    .customContentArea {
+        padding: 0.75rem;
+    }
+
+    .customSubHeader {
+        padding: 1rem 1rem;
+    }
+
+    .tableWrapper {
+        padding: 0.5rem;
+    }
+
+    .kpiContainer {
+        gap: 0.5rem;
+    }
+
+    .kpiCard {
+        min-width: 140px;
+        padding: 0.75rem;
+    }
+
+    .kpiValue {
+        font-size: 1.25rem !important;
+    }
+
+    .filterBox {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
 }
 
 /* Mobile adjustments (below 600px) */
 @media screen and (max-width: 600px) {
-    .customContentArea { padding: 0.5rem; }
-    .customSubHeader { 
-        padding: 0.75rem; 
+    .customContentArea {
+        padding: 0.5rem;
+    }
+
+    .customSubHeader {
+        padding: 0.75rem;
         flex-direction: column !important;
         align-items: flex-start !important;
     }
-    .subHeaderTitle { font-size: 1.1rem !important; }
-    .tableWrapper { padding: 0.25rem; }
-    .tableHeaderBar { 
-        flex-direction: column !important; 
-        align-items: flex-start !important; 
-        gap: 0.5rem; 
+
+    .subHeaderTitle {
+        font-size: 1.1rem !important;
     }
-    .kpiCard { min-width: 100%; }
-    .kpiValue { font-size: 1.1rem !important; }
+
+    .tableWrapper {
+        padding: 0.25rem;
+    }
+
+    .tableHeaderBar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+
+    .kpiCard {
+        min-width: 100%;
+    }
+
+    .kpiValue {
+        font-size: 1.1rem !important;
+    }
+
     .filterBox {
         flex-direction: column !important;
         align-items: stretch !important;
     }
-    .filterBox .sapMSlt { width: 100% !important; }
+
+    .filterBox .sapMSlt {
+        width: 100% !important;
+    }
+}
+
+/* Template Custom Input */
+.customTemplateInput .sapMInputBaseInner {
+    font-size: 1.25rem !important;
+    font-weight: bold !important;
+    color: #1e293b !important;
+}
+
+.customTemplateInput .sapMInputBaseContentWrapper {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.customTemplateInput:hover .sapMInputBaseContentWrapper {
+    border: 1px dashed #cbd5e1 !important;
+}
+
+.customTemplateInput.sapMInputFocused .sapMInputBaseContentWrapper {
+    border-bottom: 2px solid #0070f2 !important;
+    border-radius: 0 !important;
+}
+
+.dangerTextBtn .sapMBtnInner {
+    color: #ef4444 !important;
+    font-weight: 500 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.dangerTextBtn:hover .sapMBtnInner {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    text-decoration: underline !important;
+}
+
+.deleteIconHover .sapMBtnInner {
+    color: #6b7280 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.deleteIconHover:hover .sapMBtnInner {
+    color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.textAlignCenter input {
+    text-align: center !important;
+}
+
+.customTemplateInput .sapMInputBaseInner:focus {
+    border-bottom: 2px solid #0070f2 !important;
+    border-radius: 0 !important;
+}
+
+/* --- Manage Templates: Unified Card Layout --- */
+.tplOuterCard {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    min-height: 450px !important;
+    overflow: hidden !important;
+}
+
+.tplLeftSidebar {
+    border-right: 1px solid #d1d5db !important;
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
+}
+
+.tplSidebarHeader {
+    padding: 1rem 1.25rem !important;
+    border-bottom: 1px solid #d1d5db !important;
+    background-color: #fafbfc !important;
+}
+
+.tplRightPanel {
+    padding: 1.5rem 2rem !important;
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
+    flex: 1 !important;
+}
+
+/* --- Manage Templates: Library Cards --- */
+.tplLibraryCard {
+    cursor: pointer;
+    padding: 3rem 3rem;
+    width: auto;
+    border-left: 3px solid transparent;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+/* Add vertical gap between each list item */
+.tplLeftSidebar .sapMList .sapMLIB {
+    padding: 0 !important;
+    margin: 1.4rem 1.75rem !important;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 6px !important;
+}
+
+.tplLeftSidebar .sapMList .sapMSLI,
+.tplLeftSidebar .sapMList .sapMCLI {
+    padding: 0 !important;
+}
+
+/* Force all inner text and wrappers inside the card to center */
+.tplLibraryCard .sapMText {
+    text-align: center !important;
+    width: 100% !important;
+}
+
+.tplLibraryCard>* {
+    width: 100% !important;
+    text-align: center !important;
+}
+
+.tplLibraryCard:hover {
+    border-left-color: #93c5fd;
+    background-color: #f8faff;
+}
+
+.tplLibraryCardActive {
+    border-left-color: #3b82f6 !important;
+    background-color: #eff6ff !important;
+}
+
+/* --- Manage Templates: Phase Cards --- */
+.tplPhaseCard {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #ffffff;
+}
+
+.tplPhaseHeader {
+    background-color: #f9fafb;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    box-sizing: border-box;
+}
+
+.tplPhaseBody {
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
+}
+
+/* --- Manage Templates: Task Rows --- */
+.tplTaskRow {
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0.4rem 0.5rem;
+    box-sizing: border-box;
+    margin-bottom: 0.35rem;
+    transition: border-color 0.15s ease;
+}
+
+.tplTaskRow:hover {
+    border-color: #d1d5db;
+}
+
+.tplTaskDeleteBtn .sapMBtnInner {
+    color: #d1d5db !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.tplTaskDeleteBtn:hover .sapMBtnInner {
+    color: #ef4444 !important;
+}
+
+/* --- WBS & Timeline Styles --- */
+.transparentInput .sapMInputBaseInner {
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    padding: 0 0.25rem !important;
+    height: 1.8rem !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease-in-out;
+}
+
+.transparentInput .sapMInputBaseInner:focus,
+.transparentInput .sapMInputBaseInner:hover {
+    border: 1px solid #d1d5db !important;
+    background: #ffffff !important;
+}
+
+.textAlignCenter .sapMInputBaseInner {
+    text-align: center !important;
+}
+
+.forceWhiteSelect .sapMSlt {
+    background: #ffffff !important;
+    border-radius: 4px !important;
+}
+
+.deleteIconHover {
+    color: #9ca3af !important;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.hoverableRow:hover .deleteIconHover {
+    opacity: 1;
+}
+
+.deleteIconHover:hover {
+    color: #ef4444 !important;
+}
+
+.customTealBtn .sapMBtnInner {
+    background-color: #0d9488 !important;
+    border-color: #0d9488 !important;
+    color: white !important;
+}
+
+.customTealBtn:hover .sapMBtnInner {
+    background-color: #0f766e !important;
+}
+
+/* Timeline specific */
+.activeTimelineTab .sapMBtnInner {
+    border-bottom: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    padding-bottom: 0.4rem !important;
+    height: auto !important;
+    background: transparent !important;
+}
+
+.activeTimelineTab .sapMBtnContent,
+.activeTimelineTab .sapMBtnContent>.sapMText {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+.inactiveTimelineTab .sapMBtnInner {
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    padding-bottom: 0.4rem !important;
+    height: auto !important;
+    background: transparent !important;
+}
+
+.inactiveTimelineTab .sapMBtnContent,
+.inactiveTimelineTab .sapMBtnContent>.sapMText {
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+}
+
+.inactiveTimelineTab:hover .sapMBtnInner {
+    border-bottom: 2px solid #d1d5db !important;
+}
+
+.inactiveTimelineTab:hover .sapMBtnContent,
+.inactiveTimelineTab:hover .sapMBtnContent>.sapMText {
+    color: #374151 !important;
+}
+
+.timelineRowHover:hover {
+    background-color: rgba(59, 130, 246, 0.05) !important;
+}
+
+/* --- New Timeline Chart Classes --- */
+
+.timelineChartContainer {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow-x: auto;
+    overflow-y: visible;
+    background: white;
+}
+
+/* Header row — the top band containing label + week columns */
+.timelineHeaderRow {
+    display: flex !important;
+    min-width: 800px;
+    border-bottom: 1px solid #d1d5db;
+}
+
+/* Left-side label column (shared by header and task rows) */
+.timelineLabelCol {
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+    flex-shrink: 0 !important;
+    border-right: 1px solid #d1d5db;
+    background-color: #ffffff;
+    z-index: 20;
+    box-sizing: border-box;
+}
+
+.timelineHeaderLabelCol {
+    padding: 0.75rem 1rem;
+    display: flex !important;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.timelineTaskLabelCol {
+    padding: 0.5rem 0.75rem;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center;
+    border-left: 3px solid #3b82f6;
+    height: 3.5rem;
+    min-height: 3.5rem;
+    max-height: 3.5rem;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Grid area (right side, takes remaining space) */
+.timelineGridArea {
+    flex: 1 !important;
+    display: flex !important;
+}
+
+/* Each week column */
+.timelineWeekCol {
+    display: flex !important;
+    flex-direction: column !important;
+    border-right: 1px solid #e5e7eb;
+}
+
+/* Week label banner */
+.timelineWeekLabel {
+    background-color: #eef2f7;
+    border-bottom: 1px solid #d1d5db;
+    text-align: center !important;
+    padding: 0.35rem 0.25rem;
+    height: 1.5rem;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.timelineWeekLabelText {
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Day labels row */
+.timelineDaysRow {
+    display: flex !important;
+    flex: 1 !important;
+}
+
+.timelineDaysRow > .sapMFlexItem {
+    min-width: 28px !important;
+    flex: 1 0 28px !important;
+}
+
+/* Individual day cell in header */
+.timelineDayCell {
+    flex: 1 !important;
+    min-width: 28px !important;
+    text-align: center !important;
+    padding: 0.2rem 0;
+    background-color: #f9fafb;
+    border-right: 1px solid #f0f0f0;
+    box-sizing: border-box;
+}
+
+.timelineDayCellWeekend {
+    background-color: #f3f4f6 !important;
+}
+
+.timelineDayText {
+    font-size: 0.6rem !important;
+    color: #9ca3af !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+}
+
+/* Body section */
+.timelineBody {
+    position: relative;
+    min-width: 800px;
+    background-color: white;
+}
+
+/* Each task row */
+.timelineTaskRow {
+    display: flex !important;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+    transition: background-color 0.15s ease;
+    height: 3.5rem;
+    min-height: 3.5rem;
+    max-height: 3.5rem;
+}
+
+.timelineTaskRow:hover {
+    background-color: rgba(59, 130, 246, 0.03) !important;
+}
+
+/* Bar area (right part of each row, holds grid + gantt bar) */
+.timelineBarArea {
+    position: relative !important;
+    height: 3.5rem;
+    min-height: 3.5rem;
+}
+
+/* Grid overlay (background grid in body rows) */
+.timelineGridOverlay {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    display: flex !important;
+}
+
+.timelineWeekGridCol {
+    display: flex !important;
+    border-right: 1px dashed #e5e7eb;
+}
+
+.timelineWeekGridCol > .sapMFlexItem {
+    min-width: 28px !important;
+    flex: 1 0 28px !important;
+}
+
+.timelineDayGridCell {
+    flex: 1 !important;
+    min-width: 28px !important;
+    border-right: 1px dashed #f3f4f6;
+}
+
+.timelineDayGridWeekend {
+    background-color: #fafafa !important;
+}
+
+/* Gantt Bars — positioned via JS afterRendering */
+.ganttBarPositioned {
+    position: absolute !important;
+    z-index: 10;
+}
+
+.ganttResourceBarsWrapper {
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    z-index: 10;
+}
+
+.ganttResourceBarsWrapper > .sapMFlexItem {
+    position: static !important;
+}
+
+.ganttBarResource.ganttBarPositioned {
+    pointer-events: auto !important;
+}
+
+/* Gantt Bars */
+.ganttBarTask {
+    background: linear-gradient(135deg, #4f8ef7 0%, #3b82f6 100%) !important;
+    border: none !important;
+    height: 1.75rem !important;
+    border-radius: 4px !important;
+    margin-top: 1rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 0 0.5rem !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3) !important;
+    cursor: help;
+    z-index: 10;
+}
+
+.ganttBarResource {
+    background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%) !important;
+    border: none !important;
+    height: 1.5rem !important;
+    border-radius: 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: 0 0.5rem !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(20, 184, 166, 0.3) !important;
+    cursor: help;
+}
+
+.ganttBarText {
+    color: white !important;
+    font-size: 0.625rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15) !important;
+}
+
+.timelineWeekHeader {
+    z-index: 10;
+}
+
+.weekendDayBg {
+    background-color: #f3f4f6 !important;
+    color: #9ca3af !important;
+}
+
+.weekendGridBg {
+    background-color: #f9fafb !important;
+}
+
+.transparentInput .sapMInputBaseInner {
+    color: #4b5563 !important;
+}
+
+.transparentInput .sapMInputBaseContentWrapper {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+.transparentInput.sapMInputFocused .sapMInputBaseContentWrapper {
+    border-bottom: 2px solid #0070f2 !important;
+    border-radius: 0 !important;
+}
+
+.customPadding {
+    padding: 16px;
 }

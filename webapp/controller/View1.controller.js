@@ -57,7 +57,26 @@ sap.ui.define([
 
                 analytics: {
                     enrichedProjects: [], enrichedResources: [], projectionsByProject: [], projectionsByResource: [], summary: {}
-                }
+                },
+
+                uiState: {
+                    showNewTemplate: false,
+                    newTemplateName: "New Custom Template",
+                    editingTemplatePath: null,
+                    editingTemplateId: null
+                },
+
+                templates: [],
+
+                wbsTasks: [],
+                wbsTasksForSelectedProject: [],
+                wbsSelectedProjectId: "",
+                wbsImportTemplateId: "",
+
+                timelineSelectedProjectId: "",
+                timelineActiveSection: "tasks",
+                timelineData: { tasks: [], weeks: [] },
+                timelineResourceData: []
             };
 
             const oModel = new JSONModel(oData);
@@ -81,13 +100,21 @@ sap.ui.define([
                     aResourcesRaw,
                     aAllocationsRaw,
                     aProjectRolesRaw,
-                    aResourceRolesRaw
+                    aResourceRolesRaw,
+                    aTemplatesRaw,
+                    aTemplatePhasesRaw,
+                    aTemplateTasksRaw,
+                    aWbsTasksRaw
                 ] = await Promise.all([
                     loadList("/Projects"),
                     loadList("/Resources"),
                     loadList("/Allocations"),
                     loadList("/ProjectRoles"),
-                    loadList("/ResourceRoles")
+                    loadList("/ResourceRoles"),
+                    loadList("/Templates"),
+                    loadList("/TemplatePhases"),
+                    loadList("/TemplateTasks"),
+                    loadList("/WBSTasks")
                 ]);
 
                 const mProjRolesByProject = {};
@@ -117,6 +144,12 @@ sap.ui.define([
                     mResRolesByResource[sResId].push(rr.role);
                 });
 
+                // Read the persisted project→template mapping from localStorage
+                let mProjectTemplateMap = {};
+                try {
+                    mProjectTemplateMap = JSON.parse(localStorage.getItem("projectTemplateMap") || "{}");
+                } catch (ignore) { }
+
                 const aProjects = aProjectsRaw.map((p) => {
                     return {
                         id: p.ID,
@@ -124,6 +157,7 @@ sap.ui.define([
                         budget: Number(p.budget) || 0,
                         startDate: p.startDate,
                         endDate: p.endDate,
+                        templateId: mProjectTemplateMap[p.ID] || "",
                         requiredRoles: mProjRolesByProject[p.ID] || []
                     };
                 });
@@ -163,12 +197,72 @@ sap.ui.define([
                     }
                 });
 
+                // --- Assemble Templates with nested phases and tasks ---
+                const mTasksByPhase = {};
+                aTemplateTasksRaw.forEach((tt) => {
+                    const sPhaseId = tt.phase_ID;
+                    if (!sPhaseId) return;
+                    if (!mTasksByPhase[sPhaseId]) mTasksByPhase[sPhaseId] = [];
+                    mTasksByPhase[sPhaseId].push({
+                        id: tt.ID,
+                        name: tt.name,
+                        role: tt.role,
+                        defaultHours: tt.defaultHours,
+                        sequence: tt.sequence
+                    });
+                });
+
+                const mPhasesByTemplate = {};
+                aTemplatePhasesRaw.forEach((tp) => {
+                    const sTplId = tp.template_ID;
+                    if (!sTplId) return;
+                    if (!mPhasesByTemplate[sTplId]) mPhasesByTemplate[sTplId] = [];
+                    const phaseTasks = (mTasksByPhase[tp.ID] || []).sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                    mPhasesByTemplate[sTplId].push({
+                        id: tp.ID,
+                        name: tp.name,
+                        sequence: tp.sequence,
+                        tasks: phaseTasks
+                    });
+                });
+
+                const aTemplates = aTemplatesRaw.map((t) => {
+                    const phases = (mPhasesByTemplate[t.ID] || []).sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                    return {
+                        id: t.ID,
+                        name: t.name,
+                        phases: phases
+                    };
+                });
+
+                // --- Map WBSTasks to local format ---
+                const aWbsTasks = aWbsTasksRaw.map((w) => {
+                    return {
+                        id: w.ID,
+                        projectId: w.project_ID,
+                        phaseName: w.phaseName,
+                        name: w.name,
+                        role: w.role,
+                        resourceId: w.resource_ID || '',
+                        hours: w.hours,
+                        startDate: w.startDate,
+                        endDate: w.endDate,
+                        status: w.status || 'Not Started',
+                        sequence: w.sequence,
+                        predecessor: w.predecessor_ID || ''
+                    };
+                });
+
                 oViewModel.setProperty("/projects", aProjects);
                 oViewModel.setProperty("/resources", aResources);
                 oViewModel.setProperty("/allocations", aAllocations);
                 oViewModel.setProperty("/availableRoles", Array.from(oRoleSet));
+                oViewModel.setProperty("/templates", aTemplates);
+                oViewModel.setProperty("/wbsTasks", aWbsTasks);
 
                 this._calculateAnalytics();
+                this._computeWbsTasks();
+                this._computeTimelineData();
             } catch (e) {
                 MessageToast.show("Failed to load data from service");
                 // eslint-disable-next-line no-console
@@ -207,7 +301,11 @@ sap.ui.define([
                         const weekendHrs = Math.max(0, a.hours - standardCapacity);
                         return { name: res?.name || 'Unknown', role: a.role || 'Unassigned', hours: a.hours, weekendHrs: weekendHrs };
                     });
-                return { ...p, assignedResources, actualCost, standardCapacity };
+
+                const template = data.templates.find(t => t.id === p.templateId);
+                const templateName = template ? template.name : "None";
+
+                return { ...p, assignedResources, actualCost, standardCapacity, templateName };
             });
 
             const enrichedResources = data.resources.map(r => {
@@ -229,10 +327,16 @@ sap.ui.define([
                         activeResources.add(res.name);
                     }
                 });
+                
+                // Calculate allocated hours from the Work Breakdown Structure
+                const allocatedPlanHours = data.wbsTasks
+                    .filter(t => t.projectId === p.id)
+                    .reduce((sum, t) => sum + (t.hours || 0), 0);
+
                 const remaining = p.budget - allocatedCost;
                 let statusState = "Success";
                 if (remaining < 0) statusState = "Error"; else if (remaining < 10000) statusState = "Warning";
-                return { ...p, allocatedCost, remaining, resourceCount: activeResources.size, statusState };
+                return { ...p, allocatedCost, remaining, resourceCount: activeResources.size, statusState, allocatedPlanHours };
             });
 
             let projectionsByResource = data.resources.map(r => {
@@ -276,8 +380,10 @@ sap.ui.define([
 
             const totalBudget = data.projects.reduce((sum, p) => sum + p.budget, 0);
             const totalCost = projectionsByProject.reduce((sum, p) => sum + p.allocatedCost, 0);
-            const totalCapacity = data.resources.length * 2080;
-            const totalAllocatedHours = data.allocations.reduce((sum, a) => sum + a.hours, 0);
+            // Sum the total standard hours capacity across all active projects' timelines
+            const totalCapacity = enrichedProjects.reduce((sum, p) => sum + (p.standardCapacity || 0), 0);
+            // Sum the new allocatedPlanHours (from WBS tasks) across all projects
+            const totalAllocatedHours = projectionsByProject.reduce((sum, p) => sum + (p.allocatedPlanHours || 0), 0);
 
             const summary = {
                 totalBudget, totalCost,
@@ -337,7 +443,7 @@ sap.ui.define([
             });
             const newId = `P${String(maxId + 1).padStart(3, '0')}`;
             oModel.setProperty("/editingProjectId", null);
-            oModel.setProperty("/newProject", { id: newId, name: "", budget: null, startDate: "", endDate: "", requiredRoles: [] });
+            oModel.setProperty("/newProject", { id: newId, name: "", budget: null, startDate: "", endDate: "", requiredRoles: [], templateId: "" });
             this._openDialog("CreateProject");
         },
 
@@ -345,6 +451,13 @@ sap.ui.define([
             const oItem = oEvent.getSource().getBindingContext().getObject();
             const oModel = this.getView().getModel();
             const itemCopy = JSON.parse(JSON.stringify(oItem));
+            // Read templateId from localStorage if not already set on item
+            if (!itemCopy.templateId) {
+                try {
+                    const mMap = JSON.parse(localStorage.getItem("projectTemplateMap") || "{}");
+                    itemCopy.templateId = mMap[itemCopy.id] || "";
+                } catch (ignore) { }
+            }
             oModel.setProperty("/editingProjectId", itemCopy.id);
             oModel.setProperty("/newProject", itemCopy);
             this._openDialog("CreateProject");
@@ -392,6 +505,15 @@ sap.ui.define([
             const sPathProject = "/Projects('" + encodeURIComponent(sProjectId) + "')";
 
             try {
+                // Save the template association to localStorage (backend schema has no template_ID on Projects)
+                const mProjectTemplateMap = JSON.parse(localStorage.getItem("projectTemplateMap") || "{}");
+                if (newProj.templateId) {
+                    mProjectTemplateMap[sProjectId] = newProj.templateId;
+                } else {
+                    delete mProjectTemplateMap[sProjectId];
+                }
+                localStorage.setItem("projectTemplateMap", JSON.stringify(mProjectTemplateMap));
+
                 if (editId) {
                     const oCtx = oODataModel.bindContext(sPathProject).getBoundContext();
                     oCtx.setProperty("name", newProj.name);
@@ -451,6 +573,344 @@ sap.ui.define([
             });
         },
 
+        // --- Template UI Logic ---
+        onAddNewTemplate: function () {
+            const oModel = this.getView().getModel();
+            oModel.setProperty("/uiState/editingTemplatePath", null);
+            oModel.setProperty("/uiState/editingTemplateId", null);
+            oModel.setProperty("/uiState/newTemplateName", "New Custom Template");
+            oModel.setProperty("/uiState/editingTemplatePhases", []);
+            oModel.setProperty("/uiState/showNewTemplate", true);
+        },
+
+        onEditTemplate: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            if (!oContext) return;
+            const oTemplate = oContext.getObject();
+            const sPath = oContext.getPath();
+
+            this.getView().getModel().setProperty("/uiState/editingTemplatePath", sPath);
+            this.getView().getModel().setProperty("/uiState/editingTemplateId", oTemplate.id);
+            this.getView().getModel().setProperty("/uiState/newTemplateName", oTemplate.name);
+            this.getView().getModel().setProperty("/uiState/editingTemplatePhases", JSON.parse(JSON.stringify(oTemplate.phases || [])));
+            this.getView().getModel().setProperty("/uiState/showNewTemplate", true);
+        },
+
+        onSaveTemplate: async function () {
+            const oModel = this.getView().getModel();
+            const sName = oModel.getProperty("/uiState/newTemplateName") || "Untitled Template";
+            const sEditPath = oModel.getProperty("/uiState/editingTemplatePath");
+            const aPhases = oModel.getProperty("/uiState/editingTemplatePhases") || [];
+            const oODataModel = this._getODataModel();
+
+            try {
+                if (sEditPath) {
+                    // --- Editing existing template ---
+                    const oTemplate = oModel.getProperty(sEditPath);
+                    const sTemplateId = oTemplate.id;
+
+                    // Update template name
+                    const oTplCtx = oODataModel.bindContext("/Templates('" + encodeURIComponent(sTemplateId) + "')").getBoundContext();
+                    oTplCtx.setProperty("name", sName);
+
+                    // Delete existing phases and tasks
+                    const aExistingPhases = await this._loadTemplatePhasesForTemplate(oODataModel, sTemplateId);
+                    for (const oPhaseCtx of aExistingPhases) {
+                        const phaseObj = oPhaseCtx.getObject ? oPhaseCtx.getObject() : {};
+                        // Delete tasks belonging to this phase
+                        const aExistingTasks = await this._loadTemplateTasksForPhase(oODataModel, phaseObj.ID);
+                        for (const oTaskCtx of aExistingTasks) {
+                            if (oTaskCtx.delete) oTaskCtx.delete(BATCH_GROUP);
+                        }
+                        if (oPhaseCtx.delete) oPhaseCtx.delete(BATCH_GROUP);
+                    }
+
+                    // Re-create phases and tasks
+                    aPhases.forEach((phase, pIdx) => {
+                        const oPhaseCtx = this._createEntry(oODataModel, "/TemplatePhases", {
+                            template_ID: sTemplateId,
+                            name: phase.name,
+                            sequence: pIdx + 1
+                        });
+                        // We need to submit phases first to get IDs, so we use a simpler approach:
+                        // Create tasks referencing phase via a temporary approach
+                    });
+
+                    await oODataModel.submitBatch(BATCH_GROUP);
+
+                    // Now load the newly created phases to get their IDs, then create tasks
+                    const aNewPhaseCtxs = await this._loadTemplatePhasesForTemplate(oODataModel, sTemplateId);
+                    const sortedNewPhases = aNewPhaseCtxs.map(c => c.getObject()).sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+
+                    for (let pIdx = 0; pIdx < aPhases.length && pIdx < sortedNewPhases.length; pIdx++) {
+                        const phase = aPhases[pIdx];
+                        const backendPhase = sortedNewPhases[pIdx];
+                        if (phase.tasks) {
+                            phase.tasks.forEach((task, tIdx) => {
+                                this._createEntry(oODataModel, "/TemplateTasks", {
+                                    phase_ID: backendPhase.ID,
+                                    name: task.name,
+                                    role: task.role || '',
+                                    defaultHours: parseInt(task.defaultHours) || 8,
+                                    sequence: tIdx + 1
+                                });
+                            });
+                        }
+                    }
+
+                    await oODataModel.submitBatch(BATCH_GROUP);
+                    MessageToast.show("Template Updated successfully");
+                } else {
+                    // --- Creating new template ---
+                    const sNewId = "TPL_" + Date.now();
+                    this._createEntry(oODataModel, "/Templates", {
+                        ID: sNewId,
+                        name: sName
+                    });
+                    await oODataModel.submitBatch(BATCH_GROUP);
+
+                    // Create phases
+                    aPhases.forEach((phase, pIdx) => {
+                        this._createEntry(oODataModel, "/TemplatePhases", {
+                            template_ID: sNewId,
+                            name: phase.name,
+                            sequence: pIdx + 1
+                        });
+                    });
+                    await oODataModel.submitBatch(BATCH_GROUP);
+
+                    // Load phases to get their IDs, then create tasks
+                    const aNewPhaseCtxs = await this._loadTemplatePhasesForTemplate(oODataModel, sNewId);
+                    const sortedNewPhases = aNewPhaseCtxs.map(c => c.getObject()).sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+
+                    for (let pIdx = 0; pIdx < aPhases.length && pIdx < sortedNewPhases.length; pIdx++) {
+                        const phase = aPhases[pIdx];
+                        const backendPhase = sortedNewPhases[pIdx];
+                        if (phase.tasks) {
+                            phase.tasks.forEach((task, tIdx) => {
+                                this._createEntry(oODataModel, "/TemplateTasks", {
+                                    phase_ID: backendPhase.ID,
+                                    name: task.name,
+                                    role: task.role || '',
+                                    defaultHours: parseInt(task.defaultHours) || 8,
+                                    sequence: tIdx + 1
+                                });
+                            });
+                        }
+                    }
+
+                    await oODataModel.submitBatch(BATCH_GROUP);
+                    MessageToast.show("Template Saved successfully");
+                }
+
+                oModel.setProperty("/uiState/editingTemplatePath", null);
+                oModel.setProperty("/uiState/showNewTemplate", false);
+                await this._loadBackendData();
+            } catch (e) {
+                MessageToast.show("Failed to save template");
+                console.error("Error saving template", e);
+            }
+        },
+
+        onDeleteTemplate: async function () {
+            const oModel = this.getView().getModel();
+            const sEditPath = oModel.getProperty("/uiState/editingTemplatePath");
+            if (!sEditPath) return;
+
+            const oTemplate = oModel.getProperty(sEditPath);
+            if (!oTemplate || !oTemplate.id) return;
+
+            const oODataModel = this._getODataModel();
+            const sTemplateId = oTemplate.id;
+
+            try {
+                // Delete all tasks and phases belonging to this template
+                const aPhaseCtxs = await this._loadTemplatePhasesForTemplate(oODataModel, sTemplateId);
+                for (const oPhaseCtx of aPhaseCtxs) {
+                    const phaseObj = oPhaseCtx.getObject ? oPhaseCtx.getObject() : {};
+                    const aTaskCtxs = await this._loadTemplateTasksForPhase(oODataModel, phaseObj.ID);
+                    for (const oTaskCtx of aTaskCtxs) {
+                        if (oTaskCtx.delete) oTaskCtx.delete(BATCH_GROUP);
+                    }
+                    if (oPhaseCtx.delete) oPhaseCtx.delete(BATCH_GROUP);
+                }
+
+                // Delete the template itself
+                const oTplBinding = oODataModel.bindList("/Templates");
+                const aTplCtxs = await oTplBinding.requestContexts(0, 500);
+                const oTplCtx = aTplCtxs.find(c => {
+                    const o = c.getObject ? c.getObject() : {};
+                    return o.ID === sTemplateId;
+                });
+                if (oTplCtx && oTplCtx.delete) {
+                    oTplCtx.delete(BATCH_GROUP);
+                }
+
+                await oODataModel.submitBatch(BATCH_GROUP);
+                MessageToast.show("Template deleted");
+                oModel.setProperty("/uiState/editingTemplatePath", null);
+                oModel.setProperty("/uiState/showNewTemplate", false);
+                await this._loadBackendData();
+            } catch (e) {
+                MessageToast.show("Failed to delete template");
+                console.error("Error deleting template", e);
+            }
+        },
+
+        _loadTemplatePhasesForTemplate: async function (oODataModel, sTemplateId) {
+            const oListBinding = oODataModel.bindList("/TemplatePhases");
+            const aContexts = await oListBinding.requestContexts(0, 500);
+            return aContexts.filter(function (oCtx) {
+                const o = oCtx.getObject ? oCtx.getObject() : {};
+                return o.template_ID === sTemplateId;
+            });
+        },
+
+        _loadTemplateTasksForPhase: async function (oODataModel, sPhaseId) {
+            const oListBinding = oODataModel.bindList("/TemplateTasks");
+            const aContexts = await oListBinding.requestContexts(0, 500);
+            return aContexts.filter(function (oCtx) {
+                const o = oCtx.getObject ? oCtx.getObject() : {};
+                return o.phase_ID === sPhaseId;
+            });
+        },
+
+        onAddTemplatePhase: function () {
+            const oModel = this.getView().getModel();
+            const aPhases = oModel.getProperty("/uiState/editingTemplatePhases") || [];
+            aPhases.push({ id: "ph_" + Date.now(), name: "New Phase", tasks: [] });
+            oModel.setProperty("/uiState/editingTemplatePhases", aPhases);
+        },
+
+        onRemovePhaseFromTemplate: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const path = oContext.getPath();
+            const idx = parseInt(path.split("/").pop());
+            const oModel = this.getView().getModel();
+            const aPhases = oModel.getProperty("/uiState/editingTemplatePhases");
+            aPhases.splice(idx, 1);
+            oModel.setProperty("/uiState/editingTemplatePhases", aPhases);
+        },
+
+        onAddTaskToPhase: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const path = oContext.getPath();
+            const oModel = this.getView().getModel();
+            const oPhase = oModel.getProperty(path);
+            oPhase.tasks = oPhase.tasks || [];
+            oPhase.tasks.push({ id: "tk_" + Date.now(), name: "New Task", role: "", defaultHours: 8 });
+            oModel.setProperty(path, oPhase);
+        },
+
+        onRemoveTaskFromPhase: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const taskPath = oContext.getPath();
+            const parts = taskPath.split("/");
+            const taskIdx = parseInt(parts.pop());
+            parts.pop(); // remove 'tasks'
+            const phasePath = parts.join("/");
+
+            const oModel = this.getView().getModel();
+            const oPhase = oModel.getProperty(phasePath);
+            oPhase.tasks.splice(taskIdx, 1);
+            oModel.setProperty(phasePath, oPhase);
+        },
+
+        parseCSV: function (text) {
+            const lines = text.split('\n').filter(l => l.trim() !== '');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            return lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim());
+                const obj = {};
+                headers.forEach((h, i) => obj[h] = values[i] || '');
+                return obj;
+            });
+        },
+
+        handleTemplateImport: function (oEvent) {
+            const file = oEvent.getParameter("files")[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                const parsedData = this.parseCSV(text);
+
+                if (parsedData.length === 0) {
+                    MessageToast.show("CSV is empty or invalid format.");
+                    return;
+                }
+
+                const phasesMap = new Map();
+                parsedData.forEach((row) => {
+                    const phaseName = row.phase || 'Imported Phase';
+                    const taskName = row.task || row['task name'] || 'Imported Task';
+                    const role = row.role || '';
+                    const hoursStr = row.hours || row['default hours'] || row['hrs'];
+                    const hours = parseInt(hoursStr) || 8;
+
+                    if (!phasesMap.has(phaseName)) {
+                        phasesMap.set(phaseName, []);
+                    }
+                    phasesMap.get(phaseName).push({
+                        name: taskName,
+                        role: role,
+                        defaultHours: hours
+                    });
+                });
+
+                const oODataModel = this._getODataModel();
+                const sNewId = "TPL_" + Date.now();
+
+                try {
+                    // Create template
+                    this._createEntry(oODataModel, "/Templates", {
+                        ID: sNewId,
+                        name: file.name.replace('.csv', '') || 'Imported Template'
+                    });
+                    await oODataModel.submitBatch(BATCH_GROUP);
+
+                    // Create phases
+                    const phaseEntries = Array.from(phasesMap.entries());
+                    phaseEntries.forEach(([name], pIdx) => {
+                        this._createEntry(oODataModel, "/TemplatePhases", {
+                            template_ID: sNewId,
+                            name: name,
+                            sequence: pIdx + 1
+                        });
+                    });
+                    await oODataModel.submitBatch(BATCH_GROUP);
+
+                    // Load phases to get IDs, then create tasks
+                    const aNewPhaseCtxs = await this._loadTemplatePhasesForTemplate(oODataModel, sNewId);
+                    const sortedPhases = aNewPhaseCtxs.map(c => c.getObject()).sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+
+                    for (let pIdx = 0; pIdx < phaseEntries.length && pIdx < sortedPhases.length; pIdx++) {
+                        const tasks = phaseEntries[pIdx][1];
+                        const backendPhase = sortedPhases[pIdx];
+                        tasks.forEach((task, tIdx) => {
+                            this._createEntry(oODataModel, "/TemplateTasks", {
+                                phase_ID: backendPhase.ID,
+                                name: task.name,
+                                role: task.role || '',
+                                defaultHours: task.defaultHours || 8,
+                                sequence: tIdx + 1
+                            });
+                        });
+                    }
+
+                    await oODataModel.submitBatch(BATCH_GROUP);
+                    MessageToast.show("Template imported successfully.");
+                    await this._loadBackendData();
+                } catch (err) {
+                    MessageToast.show("Failed to import template.");
+                    console.error("Error importing template", err);
+                }
+            };
+            reader.readAsText(file);
+        },
+
         onDeleteProject: function (oEvent) {
             let oItem = oEvent.getSource();
             while (oItem && !oItem.getBindingContext) {
@@ -507,6 +967,16 @@ sap.ui.define([
                     }
                 });
 
+                // Delete associated WBSTasks
+                const wbsBinding = oODataModel.bindList("/WBSTasks");
+                const wbsContexts = await wbsBinding.requestContexts(0, 1000);
+                wbsContexts.forEach(c => {
+                    const o = c.getObject ? c.getObject() : {};
+                    if (o.project_ID === sId && c.delete) {
+                        c.delete(BATCH_GROUP);
+                    }
+                });
+
                 // Delete associated ProjectRoles
                 const roleBinding = oODataModel.bindList("/ProjectRoles");
                 const roleContexts = await roleBinding.requestContexts(0, 1000);
@@ -534,6 +1004,23 @@ sap.ui.define([
                     return;
                 }
                 await oODataModel.submitBatch(BATCH_GROUP);
+                
+                // Clear UI state if the deleted project was active in WBS or Timeline
+                const oModel = this.getView().getModel();
+                if (oModel.getProperty("/wbsSelectedProjectId") === sId) {
+                    oModel.setProperty("/wbsSelectedProjectId", "");
+                    oModel.setProperty("/wbsTasksForSelectedProject", []);
+                }
+                if (oModel.getProperty("/timelineSelectedProjectId") === sId) {
+                    oModel.setProperty("/timelineSelectedProjectId", "");
+                }
+
+                // Immediately remove from local model so the table updates instantly
+                const aProjects = oModel.getProperty("/projects") || [];
+                const updatedProjects = aProjects.filter(p => p.id !== sId);
+                oModel.setProperty("/projects", updatedProjects);
+                this._calculateAnalytics(); // Refresh the enrichedProjects list for the table
+
                 MessageToast.show("Project Deleted");
                 await this._loadBackendData();
             } catch (e) {
@@ -583,32 +1070,14 @@ sap.ui.define([
             oModel.setProperty("/newResource/hourlyRate", total > 0 ? Math.round(total / 2080) : 0);
         },
 
-        isRoleSelected: function (sRole, aSelectedRoles) {
-            if (!aSelectedRoles) return false;
-            return aSelectedRoles.indexOf(sRole) !== -1;
-        },
-
-        onRoleSelectionChange: function (oEvent) {
-            const bSelected = oEvent.getParameter("selected");
-            const sRole = oEvent.getSource().getBindingContext().getObject();
-            const oModel = this.getView().getModel();
-            let aRoles = oModel.getProperty("/newResource/roles") || [];
-
-            if (bSelected && aRoles.indexOf(sRole) === -1) {
-                aRoles.push(sRole);
-            } else if (!bSelected && aRoles.indexOf(sRole) !== -1) {
-                aRoles = aRoles.filter(r => r !== sRole);
-            }
-            oModel.setProperty("/newResource/roles", aRoles);
-        },
 
         onSaveResource: async function () {
             const oModel = this.getView().getModel();
             const newRes = oModel.getProperty("/newResource");
             const editId = oModel.getProperty("/editingResourceId");
 
-            if (!newRes.name || !newRes.roles || newRes.roles.length === 0 || newRes.salary == null || newRes.salary === "") {
-                MessageToast.show("Please fill required fields");
+            if (!newRes.name || !newRes.roles || newRes.roles.length === 0) {
+                MessageToast.show("Please fill required fields (Name, Roles)");
                 return;
             }
 
@@ -682,7 +1151,7 @@ sap.ui.define([
             });
         },
 
-        onDeleteResource: async function (oEvent) {
+        onDeleteResource: function (oEvent) {
             let oItem = oEvent.getSource();
             while (oItem && !oItem.getBindingContext) {
                 oItem = oItem.getParent();
@@ -699,6 +1168,38 @@ sap.ui.define([
                 return;
             }
 
+            const sName = oObj.name || "this resource";
+
+            // Store details for the confirm handler
+            this._pendingDeleteResourceId = sId;
+            this.getView().getModel().setProperty("/pendingDeleteResourceName", sName);
+
+            const oView = this.getView();
+            if (!this._pDeleteResConfirmDialog) {
+                this._pDeleteResConfirmDialog = this.loadFragment({
+                    name: "projectmanagement.view.fragments.DeleteResourceConfirmation"
+                }).then(function (oDialog) {
+                    oView.addDependent(oDialog);
+                    return oDialog;
+                });
+            }
+            this._pDeleteResConfirmDialog.then(function (oDialog) {
+                oDialog.open();
+            });
+        },
+
+        onDeleteResourceConfirm: async function () {
+            // Close the dialog first
+            if (this._pDeleteResConfirmDialog) {
+                this._pDeleteResConfirmDialog.then(function (oDialog) {
+                    oDialog.close();
+                });
+            }
+
+            const sId = this._pendingDeleteResourceId;
+            if (!sId) return;
+            this._pendingDeleteResourceId = null;
+
             const oODataModel = this._getODataModel();
             try {
                 const oListBinding = oODataModel.bindList("/Resources");
@@ -707,16 +1208,19 @@ sap.ui.define([
                     const o = c.getObject ? c.getObject() : {};
                     return (o.ID || o.id) === sId;
                 });
+
                 if (!oCtx) {
                     MessageToast.show("Resource not found in service");
                     return;
                 }
+
                 if (oCtx.delete) {
                     oCtx.delete(BATCH_GROUP);
                 } else {
                     MessageToast.show("Delete not supported");
                     return;
                 }
+
                 await oODataModel.submitBatch(BATCH_GROUP);
                 MessageToast.show("Resource Deleted");
                 await this._loadBackendData();
@@ -724,6 +1228,15 @@ sap.ui.define([
                 MessageToast.show("Failed to delete resource");
                 // eslint-disable-next-line no-console
                 console.error(e);
+            }
+        },
+
+        onDeleteResourceCancel: function () {
+            this._pendingDeleteResourceId = null;
+            if (this._pDeleteResConfirmDialog) {
+                this._pDeleteResConfirmDialog.then(function (oDialog) {
+                    oDialog.close();
+                });
             }
         },
 
@@ -875,6 +1388,596 @@ sap.ui.define([
             }
         },
 
+        // --- WBS Logic ---
+        onWbsProjectChange: function () {
+            this._computeWbsTasks();
+            this._computeTimelineData();
+        },
+
+        _computeWbsTasks: function () {
+            const oModel = this.getView().getModel();
+            const pid = oModel.getProperty("/wbsSelectedProjectId");
+            const allTasks = oModel.getProperty("/wbsTasks") || [];
+
+            const filteredTasks = allTasks.filter(t => t.projectId === pid).map((t, idx) => {
+                t.index = idx + 1;
+                t.startDateEdit = t.startDate ? t.startDate.slice(0, 10) : "";
+                t.endDateEdit = t.endDate ? t.endDate.slice(0, 10) : "";
+                return t;
+            });
+            oModel.setProperty("/wbsTasksForSelectedProject", filteredTasks);
+        },
+
+        calculateEndDate: function (startDateStr, hours) {
+            if (!startDateStr || !hours || hours <= 0) return startDateStr;
+            const sDate = new Date(startDateStr + 'T00:00:00');
+            if (isNaN(sDate.getTime())) return startDateStr;
+
+            const daysNeeded = Math.ceil(hours / 8);
+            let currentDays = 0;
+            const date = new Date(sDate.getTime());
+
+            if (date.getDay() !== 0 && date.getDay() !== 6) {
+                currentDays = 1;
+            }
+
+            while (currentDays < daysNeeded) {
+                date.setDate(date.getDate() + 1);
+                if (date.getDay() !== 0 && date.getDay() !== 6) {
+                    currentDays++;
+                }
+            }
+
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        },
+
+        getNextWorkingDay: function (dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr + 'T00:00:00');
+            if (isNaN(date.getTime())) return '';
+
+            date.setDate(date.getDate() + 1);
+            while (date.getDay() === 0 || date.getDay() === 6) {
+                date.setDate(date.getDate() + 1);
+            }
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        },
+
+        onAddWbsTask: async function () {
+            const oModel = this.getView().getModel();
+            const projId = oModel.getProperty("/wbsSelectedProjectId");
+            if (!projId) return;
+
+            const projects = oModel.getProperty("/projects") || [];
+            const p = projects.find(x => x.id === projId);
+            const defaultHours = 8;
+            const endDate = p && p.startDate ? this.calculateEndDate(p.startDate, defaultHours) : (p ? p.endDate : '');
+
+            const oODataModel = this._getODataModel();
+            try {
+                this._createEntry(oODataModel, "/WBSTasks", {
+                    project_ID: projId,
+                    phaseName: 'New Phase',
+                    name: 'New Task',
+                    role: '',
+                    resource_ID: null,
+                    hours: defaultHours,
+                    startDate: this._formatDateForOData(p ? p.startDate : null),
+                    endDate: this._formatDateForOData(endDate),
+                    status: 'Not Started',
+                    sequence: (oModel.getProperty("/wbsTasks") || []).filter(t => t.projectId === projId).length + 1,
+                    predecessor_ID: null
+                });
+                await oODataModel.submitBatch(BATCH_GROUP);
+                await this._loadBackendData();
+                MessageToast.show("Task added");
+            } catch (e) {
+                MessageToast.show("Failed to add WBS task");
+                console.error("Error adding WBS task", e);
+            }
+        },
+
+        onRemoveWbsTask: async function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const taskId = oContext.getObject().id;
+
+            const oODataModel = this._getODataModel();
+            try {
+                const oListBinding = oODataModel.bindList("/WBSTasks");
+                const aContexts = await oListBinding.requestContexts(0, 1000);
+                const oTaskCtx = aContexts.find(c => {
+                    const o = c.getObject ? c.getObject() : {};
+                    return o.ID === taskId;
+                });
+                if (oTaskCtx && oTaskCtx.delete) {
+                    oTaskCtx.delete(BATCH_GROUP);
+                }
+                await oODataModel.submitBatch(BATCH_GROUP);
+                await this._loadBackendData();
+                MessageToast.show("Task removed");
+            } catch (e) {
+                MessageToast.show("Failed to remove WBS task");
+                console.error("Error removing WBS task", e);
+            }
+        },
+
+        onUpdateWbsTask: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const task = oContext.getObject();
+            this._syncWbsTaskToMain(task);
+        },
+
+        onUpdateWbsTaskHours: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const task = oContext.getObject();
+            task.hours = parseFloat(task.hours) || 0;
+            task.endDate = this.calculateEndDate(task.startDate, task.hours);
+            this._syncWbsTaskToMain(task);
+            // Cascade to other tasks with the same resource
+            if (task.resourceId) {
+                this._recalculateResourceSchedule(task.projectId, task.resourceId);
+            }
+        },
+
+        onUpdateWbsTaskStartDate: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const task = oContext.getObject();
+            task.startDate = task.startDateEdit || "";
+            task.endDate = this.calculateEndDate(task.startDate, task.hours);
+            this._syncWbsTaskToMain(task);
+            // Cascade to other tasks with the same resource
+            if (task.resourceId) {
+                this._recalculateResourceSchedule(task.projectId, task.resourceId);
+            }
+        },
+
+        onUpdateWbsTaskEndDate: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const task = oContext.getObject();
+            task.endDate = task.endDateEdit || "";
+            task.hours = this.getWorkingHours(task.startDate, task.endDateEdit);
+            this._syncWbsTaskToMain(task);
+            // Cascade to other tasks with the same resource
+            if (task.resourceId) {
+                this._recalculateResourceSchedule(task.projectId, task.resourceId);
+            }
+        },
+
+        onUpdateWbsTaskPredecessor: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const task = oContext.getObject();
+            this._syncWbsTaskToMain(task);
+        },
+
+        onUpdateWbsTaskResource: function (oEvent) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const task = oContext.getObject();
+            const oModel = this.getView().getModel();
+            const allTasks = oModel.getProperty("/wbsTasks") || [];
+
+            if (task.resourceId) {
+                // Find other tasks with the same resource in the same project
+                const otherTasks = allTasks.filter(ot =>
+                    ot.projectId === task.projectId &&
+                    ot.resourceId === task.resourceId &&
+                    ot.id !== task.id &&
+                    ot.endDate
+                );
+                if (otherTasks.length > 0) {
+                    const maxEndDate = otherTasks.reduce((max, ot) =>
+                        ot.endDate > max ? ot.endDate : max, otherTasks[0].endDate);
+                    if (maxEndDate) {
+                        const nextStartDate = this.getNextWorkingDay(maxEndDate);
+                        if (nextStartDate) {
+                            task.startDate = nextStartDate;
+                            task.startDateEdit = nextStartDate;
+                            task.endDate = this.calculateEndDate(nextStartDate, task.hours);
+                            task.endDateEdit = task.endDate;
+                        }
+                    }
+                } else {
+                    // Resource has no other tasks in this project; start at project start date
+                    const projects = oModel.getProperty("/projects") || [];
+                    const p = projects.find(x => x.id === task.projectId);
+                    if (p && p.startDate) {
+                        task.startDate = p.startDate;
+                        task.startDateEdit = p.startDate;
+                        task.endDate = this.calculateEndDate(p.startDate, task.hours);
+                        task.endDateEdit = task.endDate;
+                    }
+                }
+            }
+            this._syncWbsTaskToMain(task);
+            if (task.resourceId) {
+                this._recalculateResourceSchedule(task.projectId, task.resourceId);
+            }
+        },
+
+        /**
+         * Recalculates dates for all tasks sharing the same resource in a project.
+         * Tasks are sorted by start date and chained: each subsequent task starts
+         * on the next working day after the previous task ends.
+         */
+        _recalculateResourceSchedule: function (projectId, resourceId) {
+            if (!resourceId) return;
+            const oModel = this.getView().getModel();
+            const allTasks = oModel.getProperty("/wbsTasks") || [];
+
+            // Get all tasks for this resource in this project
+            const resourceTasks = allTasks.filter(t =>
+                t.projectId === projectId && t.resourceId === resourceId
+            );
+
+            if (resourceTasks.length <= 1) return;
+
+            // Sort by start date (earliest first)
+            resourceTasks.sort((a, b) => {
+                const aDate = a.startDate || "9999-12-31";
+                const bDate = b.startDate || "9999-12-31";
+                return aDate.localeCompare(bDate);
+            });
+
+            // Chain dates: each subsequent task starts after the previous one ends
+            let changed = false;
+            for (let i = 1; i < resourceTasks.length; i++) {
+                const prevTask = resourceTasks[i - 1];
+                const currTask = resourceTasks[i];
+
+                if (prevTask.endDate) {
+                    const nextStart = this.getNextWorkingDay(prevTask.endDate);
+                    if (nextStart && currTask.startDate !== nextStart) {
+                        currTask.startDate = nextStart;
+                        currTask.startDateEdit = nextStart;
+                        currTask.endDate = this.calculateEndDate(nextStart, currTask.hours || 0);
+                        currTask.endDateEdit = currTask.endDate;
+
+                        // Update in allTasks array
+                        const idx = allTasks.findIndex(t => t.id === currTask.id);
+                        if (idx > -1) {
+                            allTasks[idx] = { ...currTask };
+                        }
+                        // Persist cascaded task to backend
+                        this._syncWbsTaskToMain(currTask);
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed) {
+                oModel.setProperty("/wbsTasks", allTasks);
+                this._computeWbsTasks();
+                this._computeTimelineData();
+            }
+        },
+
+        _syncWbsTaskToMain: async function (taskData) {
+            const oModel = this.getView().getModel();
+            const allTasks = oModel.getProperty("/wbsTasks") || [];
+            const idx = allTasks.findIndex(t => t.id === taskData.id);
+            if (idx > -1) {
+                allTasks[idx] = { ...taskData };
+                oModel.setProperty("/wbsTasks", allTasks);
+                this._computeWbsTasks();
+                this._computeTimelineData();
+            }
+
+            // Persist to backend
+            const oODataModel = this._getODataModel();
+            try {
+                const oCtx = oODataModel.bindContext("/WBSTasks(" + taskData.id + ")").getBoundContext();
+                oCtx.setProperty("phaseName", taskData.phaseName || '');
+                oCtx.setProperty("name", taskData.name || '');
+                oCtx.setProperty("role", taskData.role || '');
+                oCtx.setProperty("resource_ID", taskData.resourceId || null);
+                oCtx.setProperty("hours", parseInt(taskData.hours) || 0);
+                oCtx.setProperty("startDate", this._formatDateForOData(taskData.startDate));
+                oCtx.setProperty("endDate", this._formatDateForOData(taskData.endDate));
+                oCtx.setProperty("predecessor_ID", taskData.predecessor || null);
+                await oODataModel.submitBatch(BATCH_GROUP);
+            } catch (e) {
+                console.error("Error syncing WBS task to backend", e);
+            }
+        },
+
+        onImportTemplateToWBS: async function () {
+            const oModel = this.getView().getModel();
+            const tplId = oModel.getProperty("/wbsImportTemplateId");
+            const projId = oModel.getProperty("/wbsSelectedProjectId");
+
+            const tpl = (oModel.getProperty("/templates") || []).find(t => t.id === tplId);
+            const proj = (oModel.getProperty("/projects") || []).find(p => p.id === projId);
+
+            if (!tpl || !proj) return;
+
+            const oODataModel = this._getODataModel();
+            const existingTasks = (oModel.getProperty("/wbsTasks") || []).filter(t => t.projectId === projId);
+            let seq = existingTasks.length;
+
+            try {
+                if (tpl.phases) {
+                    tpl.phases.forEach(phase => {
+                        if (phase.tasks) {
+                            phase.tasks.forEach(task => {
+                                seq++;
+                                this._createEntry(oODataModel, "/WBSTasks", {
+                                    project_ID: proj.id,
+                                    phaseName: phase.name,
+                                    name: task.name,
+                                    role: task.role || '',
+                                    resource_ID: null,
+                                    hours: task.defaultHours || 8,
+                                    startDate: this._formatDateForOData(proj.startDate),
+                                    endDate: this._formatDateForOData(this.calculateEndDate(proj.startDate, task.defaultHours || 8)),
+                                    status: 'Not Started',
+                                    sequence: seq,
+                                    predecessor_ID: null
+                                });
+                            });
+                        }
+                    });
+                }
+
+                await oODataModel.submitBatch(BATCH_GROUP);
+                oModel.setProperty("/wbsImportTemplateId", "");
+                MessageToast.show("Template imported into WBS");
+                await this._loadBackendData();
+            } catch (e) {
+                MessageToast.show("Failed to import template to WBS");
+                console.error("Error importing template to WBS", e);
+            }
+        },
+
+        handleWbsImport: function (oEvent) {
+            const file = oEvent.getParameter("files")[0];
+            if (!file) return;
+
+            const oModel = this.getView().getModel();
+            const projId = oModel.getProperty("/wbsSelectedProjectId");
+            if (!projId) {
+                MessageToast.show("Please select a project first.");
+                return;
+            }
+
+            const proj = (oModel.getProperty("/projects") || []).find(p => p.id === projId);
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                const parsedData = this.parseCSV(text);
+
+                if (parsedData.length === 0) {
+                    MessageToast.show("CSV is empty or invalid format.");
+                    return;
+                }
+
+                const oODataModel = this._getODataModel();
+                const existingTasks = (oModel.getProperty("/wbsTasks") || []).filter(t => t.projectId === projId);
+                let seq = existingTasks.length;
+
+                try {
+                    parsedData.forEach((row) => {
+                        const phase = row.phase || 'Imported Phase';
+                        const taskName = row.task || row['task name'] || 'Imported Task';
+                        const hoursStr = row.hours || row['default hours'] || row['hrs'];
+                        const hours = parseInt(hoursStr) || 8;
+                        const role = row.role || '';
+
+                        let startDate = row['start date'] || row.startdate || row.start;
+                        if (!startDate || isNaN(new Date(startDate + 'T00:00:00').getTime())) {
+                            startDate = proj ? proj.startDate : '';
+                        }
+
+                        seq++;
+                        this._createEntry(oODataModel, "/WBSTasks", {
+                            project_ID: projId,
+                            phaseName: phase,
+                            name: taskName,
+                            role: role,
+                            resource_ID: null,
+                            hours: hours,
+                            startDate: this._formatDateForOData(startDate),
+                            endDate: this._formatDateForOData(this.calculateEndDate(startDate, hours)),
+                            status: 'Not Started',
+                            sequence: seq,
+                            predecessor_ID: null
+                        });
+                    });
+
+                    await oODataModel.submitBatch(BATCH_GROUP);
+                    MessageToast.show("Successfully imported tasks from CSV.");
+                    await this._loadBackendData();
+                } catch (err) {
+                    MessageToast.show("Failed to import WBS tasks from CSV.");
+                    console.error("Error importing WBS from CSV", err);
+                }
+            };
+            reader.readAsText(file);
+        },
+
+        // --- Timeline Logic ---
+        onTimelineProjectChange: function () {
+            this._computeTimelineData();
+        },
+
+        onSetTimelineTasks: function () {
+            this.getView().getModel().setProperty("/timelineActiveSection", "tasks");
+        },
+
+        onSetTimelineResources: function () {
+            this.getView().getModel().setProperty("/timelineActiveSection", "resources");
+        },
+
+        _computeTimelineData: function () {
+            const oModel = this.getView().getModel();
+            const pId = oModel.getProperty("/timelineSelectedProjectId");
+            if (!pId) {
+                oModel.setProperty("/timelineData", null);
+                oModel.setProperty("/timelineResourceData", []);
+                return;
+            }
+
+            const projects = oModel.getProperty("/projects") || [];
+            const proj = projects.find(p => p.id === pId);
+            if (!proj) return;
+
+            const allWbsTasks = oModel.getProperty("/wbsTasks") || [];
+            const tasks = allWbsTasks.filter(t => t.projectId === pId && t.startDate && t.endDate);
+
+            if (tasks.length === 0) {
+                oModel.setProperty("/timelineData", { proj: proj, tasks: [], weeks: [] });
+                oModel.setProperty("/timelineResourceData", []);
+                return;
+            }
+
+            const minTime = Math.min(...tasks.map(t => new Date(t.startDate + 'T00:00:00').getTime()));
+            const maxTime = Math.max(...tasks.map(t => new Date(t.endDate + 'T00:00:00').getTime()));
+
+            const pStart = new Date(proj.startDate + 'T00:00:00').getTime();
+            const pEnd = new Date(proj.endDate + 'T00:00:00').getTime();
+
+            const startTimestamp = Math.min(minTime, pStart);
+            const endTimestamp = Math.max(maxTime, pEnd);
+
+            // Calculate total days inclusive (e.g., Mar 4 to Mar 5 is 2 days)
+            const msPerDay = 1000 * 3600 * 24;
+            const totalDurationDays = Math.max(1, Math.round((endTimestamp - startTimestamp) / msPerDay) + 1);
+
+            const resources = oModel.getProperty("/resources") || [];
+
+            // Build the full list of day timestamps for proper bar alignment
+            var timelineDayTimestamps = [];
+            {
+                var d = new Date(startTimestamp);
+                d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                var dEnd = new Date(endTimestamp);
+                dEnd = new Date(Date.UTC(dEnd.getFullYear(), dEnd.getMonth(), dEnd.getDate()));
+                while (d <= dEnd) {
+                    timelineDayTimestamps.push(d.getTime());
+                    d.setUTCDate(d.getUTCDate() + 1);
+                }
+            }
+            var totalCells = timelineDayTimestamps.length;
+
+            var enrichedTasks = tasks.map(function (t) {
+                var tStart = new Date(t.startDate + 'T00:00:00');
+                tStart = new Date(Date.UTC(tStart.getFullYear(), tStart.getMonth(), tStart.getDate())).getTime();
+                var tEnd = new Date(t.endDate + 'T00:00:00');
+                tEnd = new Date(Date.UTC(tEnd.getFullYear(), tEnd.getMonth(), tEnd.getDate())).getTime();
+
+                // Find the index of the start day and end day in the timeline cells
+                var startIdx = 0;
+                var endIdx = totalCells - 1;
+                for (var i = 0; i < totalCells; i++) {
+                    if (timelineDayTimestamps[i] >= tStart) { startIdx = i; break; }
+                }
+                for (var j = totalCells - 1; j >= 0; j--) {
+                    if (timelineDayTimestamps[j] <= tEnd) { endIdx = j; break; }
+                }
+
+                // Calculate percentage based on cell indices (each cell is 1/totalCells wide)
+                var left = (startIdx / totalCells) * 100;
+                var width = ((endIdx - startIdx + 1) / totalCells) * 100;
+
+                var res = resources.find(function (r) { return r.id === t.resourceId; });
+                return Object.assign({}, t, {
+                    leftPct: Math.min(100, Math.max(0, left)),
+                    widthPct: Math.min(100 - left, Math.max(0.5, width)),
+                    resourceName: res ? res.name : 'Unassigned'
+                });
+            });
+
+            const weeks = [];
+            const dayLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            // Use UTC to avoid DST shifts creating duplicate/missing days
+            let currentDay = new Date(startTimestamp);
+            currentDay = new Date(Date.UTC(currentDay.getFullYear(), currentDay.getMonth(), currentDay.getDate()));
+
+            let endDay = new Date(endTimestamp);
+            endDay = new Date(Date.UTC(endDay.getFullYear(), endDay.getMonth(), endDay.getDate()));
+
+            let weekIndex = 1;
+
+            if (totalDurationDays > 0) {
+                while (currentDay <= endDay) {
+                    const days = [];
+
+                    while (currentDay <= endDay) {
+                        const dateObj = new Date(currentDay);
+                        const dayOfWeek = dateObj.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+                        const dateNum = dateObj.getUTCDate();
+
+                        days.push({
+                            label: dayLetters[dayOfWeek] + dateNum,
+                            fullDate: `${dateObj.getUTCMonth() + 1}/${dateNum}/${dateObj.getUTCFullYear()}`,
+                            isWeekend: dayOfWeek === 0 || dayOfWeek === 6
+                        });
+
+                        // Increment by exactly 24 hours in UTC
+                        currentDay.setUTCDate(currentDay.getUTCDate() + 1);
+
+                        // Week ends on Sunday (dayOfWeek === 0) — Mon-to-Sun weeks
+                        if (dayOfWeek === 0) {
+                            break;
+                        }
+                    }
+
+                    if (days.length > 0) {
+                        weeks.push({
+                            label: `Week ${weekIndex}`,
+                            days: days,
+                            daysCount: days.length
+                        });
+                        weekIndex++;
+                    }
+                }
+            } else {
+                weeks.push({ label: "Week 1", days: [], daysCount: 1 });
+            }
+            var gridMinWidth = totalCells * 28;
+            oModel.setProperty("/timelineData", { proj: proj, tasks: enrichedTasks, weeks: weeks, totalDayCells: totalCells, gridMinWidth: gridMinWidth + 'px' });
+
+            // Compute Resource timeline data
+            const map = new Map();
+            enrichedTasks.forEach(task => {
+                const rId = task.resourceId || 'unassigned';
+                if (!map.has(rId)) {
+                    map.set(rId, {
+                        resourceId: rId,
+                        resourceName: task.resourceName,
+                        totalHours: 0,
+                        tasks: []
+                    });
+                }
+                const group = map.get(rId);
+                group.totalHours += task.hours;
+
+                // Position sequentially
+                const topPx = (group.tasks.length * 32) + 8;
+                group.tasks.push({ ...task, topPx: topPx });
+            });
+
+            const rData = Array.from(map.values()).map(r => {
+                r.heightPx = (r.tasks.length * 32) + 16;
+                return r;
+            });
+
+            oModel.setProperty("/timelineResourceData", rData);
+
+            // Set min-width on grid areas after SAPUI5 renders
+            setTimeout(function () {
+                var gridAreas = document.querySelectorAll('.timelineGridArea');
+                gridAreas.forEach(function (area) {
+                    area.style.minWidth = gridMinWidth + 'px';
+                });
+            }, 200);
+        },
+
         formatCurrency: function (value) {
             if (value === null || value === undefined) return "";
             // Changed formatting to include .00 exactly like your images
@@ -885,6 +1988,10 @@ sap.ui.define([
             if (!dateStr) return "";
             const oDate = new Date(dateStr);
             return DateFormat.getDateInstance({ style: "medium" }).format(oDate);
+        },
+        formatDecimal: function (value) {
+            if (value === null || value === undefined) return "0.00";
+            return parseFloat(value).toFixed(2);
         }
     });
 });

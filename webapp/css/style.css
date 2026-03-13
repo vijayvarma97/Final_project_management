@@ -237,6 +237,7 @@
 .innerProjectionsTabs {
     margin-top: 0.5rem;
 }
+
 .innerProjectionsTabs .sapMITBHead {
     border-bottom: 1px solid #e5e7eb;
     padding-bottom: 0;
@@ -297,7 +298,7 @@
 }
 
 /* Prevent the dialog content section from clipping the footer */
-.sapMDialog > .sapMDialogSection {
+.sapMDialog>.sapMDialogSection {
     overflow: visible !important;
 }
 
@@ -1056,7 +1057,7 @@
     flex: 1 !important;
 }
 
-.timelineDaysRow > .sapMFlexItem {
+.timelineDaysRow>.sapMFlexItem {
     min-width: 28px !important;
     flex: 1 0 28px !important;
 }
@@ -1066,7 +1067,7 @@
     flex: 1 !important;
     min-width: 28px !important;
     text-align: center !important;
-    padding: 0.2rem 0;
+    padding: 0.2rem 0.2rem;
     background-color: #f9fafb;
     border-right: 1px solid #f0f0f0;
     box-sizing: border-box;
@@ -1080,6 +1081,7 @@
     font-size: 0.6rem !important;
     color: #9ca3af !important;
     font-weight: 500 !important;
+    display: block !important;
     text-align: center !important;
     white-space: nowrap !important;
 }
@@ -1130,7 +1132,7 @@
     border-right: 1px dashed #e5e7eb;
 }
 
-.timelineWeekGridCol > .sapMFlexItem {
+.timelineWeekGridCol>.sapMFlexItem {
     min-width: 28px !important;
     flex: 1 0 28px !important;
 }
@@ -1151,50 +1153,78 @@
     z-index: 10;
 }
 
+span.ganttBarText {
+    display: block !important;
+}
+
 .ganttResourceBarsWrapper {
     position: absolute !important;
     width: 100% !important;
     height: 100% !important;
-    pointer-events: none !important;
     z-index: 10;
 }
 
-.ganttResourceBarsWrapper > .sapMFlexItem {
+.ganttTaskBarWrapper {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    z-index: 10;
+    align-items: center !important;
+    pointer-events: none !important;
+}
+
+.ganttResourceBarsWrapper>.sapMFlexItem {
     position: static !important;
 }
 
-.ganttBarResource.ganttBarPositioned {
+.ganttResourceBarRow {
+    height: 32px;
+    align-items: center !important;
+    pointer-events: none !important;
+}
+
+.ganttBarSpacer {
+    height: 1px;
+    min-height: 1px;
+}
+
+.ganttTaskBarWrapper .ganttBarTask,
+.ganttResourceBarRow .ganttBarResource {
     pointer-events: auto !important;
 }
 
 /* Gantt Bars */
 .ganttBarTask {
     background: linear-gradient(135deg, #4f8ef7 0%, #3b82f6 100%) !important;
-    border: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     height: 1.75rem !important;
-    border-radius: 4px !important;
+    border-radius: 6px !important;
     margin-top: 1rem !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     padding: 0 0.5rem !important;
     overflow: hidden !important;
-    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+    box-sizing: border-box !important;
     cursor: help;
     z-index: 10;
 }
 
 .ganttBarResource {
     background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%) !important;
-    border: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     height: 1.5rem !important;
-    border-radius: 4px !important;
+    border-radius: 6px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     padding: 0 0.5rem !important;
     overflow: hidden !important;
-    box-shadow: 0 1px 3px rgba(20, 184, 166, 0.3) !important;
+    box-shadow: 0 2px 4px rgba(20, 184, 166, 0.3) !important;
+    box-sizing: border-box !important;
     cursor: help;
 }
 

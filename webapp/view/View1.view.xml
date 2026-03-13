@@ -452,7 +452,7 @@
                                     <HBox items="{/timelineData/weeks}" class="timelineGridArea" style="min-width: {/timelineData/gridMinWidth}">
                                         <VBox class="timelineWeekCol">
                                             <layoutData>
-                                                <FlexItemData growFactor="{daysCount}" shrinkFactor="0" />
+                                                <FlexItemData growFactor="{daysCount}" shrinkFactor="0" baseSize="0%" />
                                             </layoutData>
                                             <VBox class="timelineWeekLabel">
                                                 <Text text="{label}" class="timelineWeekLabelText" />
@@ -481,16 +481,19 @@
                                                 <HBox class="timelineGridOverlay" items="{/timelineData/weeks}">
                                                     <HBox class="timelineWeekGridCol" items="{days}">
                                                         <layoutData>
-                                                            <FlexItemData growFactor="{daysCount}" shrinkFactor="0" />
+                                                            <FlexItemData growFactor="{daysCount}" shrinkFactor="0" baseSize="0%" />
                                                         </layoutData>
                                                         <VBox class="{= ${isWeekend} ? 'timelineDayGridCell timelineDayGridWeekend' : 'timelineDayGridCell'}"></VBox>
                                                     </HBox>
                                                 </HBox>
                                                 
                                                 <!-- Bar -->
-                                                <VBox class="ganttBarTask ganttBarPositioned" style="{= 'position:absolute; left:' + ${leftPct} + '%; width:' + ${widthPct} + '%;' }" tooltip="Start: {startDate}&#10;End: {endDate}">
-                                                    <Text text="{name}" class="ganttBarText" />
-                                                </VBox>
+                                                <HBox class="ganttTaskBarWrapper">
+                                                    <VBox class="ganttBarSpacer" width="{leftPx}px"></VBox>
+                                                    <VBox class="ganttBarTask" width="{widthPx}px" tooltip="Start: {startDate}&#10;End: {endDate}">
+                                                        <Text text="{name}" class="ganttBarText" />
+                                                    </VBox>
+                                                </HBox>
                                             </HBox>
                                         </HBox>
                                     </VBox>
@@ -512,16 +515,19 @@
                                                 <HBox class="timelineGridOverlay" items="{/timelineData/weeks}">
                                                     <HBox class="timelineWeekGridCol" items="{days}">
                                                         <layoutData>
-                                                            <FlexItemData growFactor="{daysCount}" shrinkFactor="0" />
+                                                            <FlexItemData growFactor="{daysCount}" shrinkFactor="0" baseSize="0%" />
                                                         </layoutData>
                                                         <VBox class="{= ${isWeekend} ? 'timelineDayGridCell timelineDayGridWeekend' : 'timelineDayGridCell'}"></VBox>
                                                     </HBox>
                                                 </HBox>
                                                 
                                                 <VBox items="{tasks}" class="ganttResourceBarsWrapper">
-                                                    <VBox class="ganttBarResource ganttBarPositioned" style="{= 'position:absolute; left:' + ${leftPct} + '%; width:' + ${widthPct} + '%; top:' + ${topPx} + 'px;' }" tooltip="Task: {name}&#10;Start: {startDate}&#10;End: {endDate}&#10;Hours: {hours}">
-                                                        <Text text="{name}" class="ganttBarText" />
-                                                    </VBox>
+                                                    <HBox class="ganttResourceBarRow">
+                                                        <VBox class="ganttBarSpacer" width="{leftPx}px"></VBox>
+                                                        <VBox class="ganttBarResource" width="{widthPx}px" tooltip="Task: {name}&#10;Start: {startDate}&#10;End: {endDate}&#10;Hours: {hours}">
+                                                            <Text text="{name}" class="ganttBarText" />
+                                                        </VBox>
+                                                    </HBox>
                                                 </VBox>
                                             </HBox>
                                         </HBox>

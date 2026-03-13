@@ -35,6 +35,33 @@ sap.ui.define([
             return d.toISOString().slice(0, 10);
         },
 
+        _parseDateToUtcMidnightTimestamp: function (dateVal) {
+            if (!dateVal) return NaN;
+
+            let d;
+            if (dateVal instanceof Date) {
+                d = new Date(dateVal.getTime());
+            } else if (typeof dateVal === "string") {
+                const s = dateVal.trim();
+                if (!s) return NaN;
+
+                const ymdMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (ymdMatch) {
+                    return Date.UTC(
+                        parseInt(ymdMatch[1], 10),
+                        parseInt(ymdMatch[2], 10) - 1,
+                        parseInt(ymdMatch[3], 10)
+                    );
+                }
+                d = new Date(s);
+            } else {
+                d = new Date(dateVal);
+            }
+
+            if (!d || isNaN(d.getTime())) return NaN;
+            return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+        },
+
         onInit() {
             const oData = {
                 activeTab: "projects",
@@ -327,7 +354,7 @@ sap.ui.define([
                         activeResources.add(res.name);
                     }
                 });
-                
+
                 // Calculate allocated hours from the Work Breakdown Structure
                 const allocatedPlanHours = data.wbsTasks
                     .filter(t => t.projectId === p.id)
@@ -1004,7 +1031,7 @@ sap.ui.define([
                     return;
                 }
                 await oODataModel.submitBatch(BATCH_GROUP);
-                
+
                 // Clear UI state if the deleted project was active in WBS or Timeline
                 const oModel = this.getView().getModel();
                 if (oModel.getProperty("/wbsSelectedProjectId") === sId) {
@@ -1827,7 +1854,17 @@ sap.ui.define([
             if (!proj) return;
 
             const allWbsTasks = oModel.getProperty("/wbsTasks") || [];
-            const tasks = allWbsTasks.filter(t => t.projectId === pId && t.startDate && t.endDate);
+            const tasks = allWbsTasks
+                .filter(t => t.projectId === pId && t.startDate && t.endDate)
+                .map(t => {
+                    const startTs = this._parseDateToUtcMidnightTimestamp(t.startDate);
+                    const endTs = this._parseDateToUtcMidnightTimestamp(t.endDate);
+                    return Object.assign({}, t, {
+                        _startTs: startTs,
+                        _endTs: endTs
+                    });
+                })
+                .filter(t => Number.isFinite(t._startTs) && Number.isFinite(t._endTs) && t._endTs >= t._startTs);
 
             if (tasks.length === 0) {
                 oModel.setProperty("/timelineData", { proj: proj, tasks: [], weeks: [] });
@@ -1835,18 +1872,17 @@ sap.ui.define([
                 return;
             }
 
-            const minTime = Math.min(...tasks.map(t => new Date(t.startDate + 'T00:00:00').getTime()));
-            const maxTime = Math.max(...tasks.map(t => new Date(t.endDate + 'T00:00:00').getTime()));
+            const minTime = Math.min(...tasks.map(t => t._startTs));
+            const maxTime = Math.max(...tasks.map(t => t._endTs));
 
-            const pStart = new Date(proj.startDate + 'T00:00:00').getTime();
-            const pEnd = new Date(proj.endDate + 'T00:00:00').getTime();
-
-            const startTimestamp = Math.min(minTime, pStart);
-            const endTimestamp = Math.max(maxTime, pEnd);
+            const pStart = this._parseDateToUtcMidnightTimestamp(proj.startDate);
+            const pEnd = this._parseDateToUtcMidnightTimestamp(proj.endDate);
+            const startTimestamp = Number.isFinite(pStart) ? Math.min(minTime, pStart) : minTime;
+            const endTimestamp = Number.isFinite(pEnd) ? Math.max(maxTime, pEnd) : maxTime;
 
             // Calculate total days inclusive (e.g., Mar 4 to Mar 5 is 2 days)
             const msPerDay = 1000 * 3600 * 24;
-            const totalDurationDays = Math.max(1, Math.round((endTimestamp - startTimestamp) / msPerDay) + 1);
+            const totalDurationDays = Math.max(1, Math.floor((endTimestamp - startTimestamp) / msPerDay) + 1);
 
             const resources = oModel.getProperty("/resources") || [];
 
@@ -1863,31 +1899,32 @@ sap.ui.define([
                 }
             }
             var totalCells = timelineDayTimestamps.length;
+            var cellWidthPx = 28;
 
             var enrichedTasks = tasks.map(function (t) {
-                var tStart = new Date(t.startDate + 'T00:00:00');
-                tStart = new Date(Date.UTC(tStart.getFullYear(), tStart.getMonth(), tStart.getDate())).getTime();
-                var tEnd = new Date(t.endDate + 'T00:00:00');
-                tEnd = new Date(Date.UTC(tEnd.getFullYear(), tEnd.getMonth(), tEnd.getDate())).getTime();
+                var startDayIndex = Math.floor((t._startTs - startTimestamp) / msPerDay);
+                var endDayIndex = Math.floor((t._endTs - startTimestamp) / msPerDay);
+                var safeStartDay = Math.max(0, Math.min(totalCells - 1, startDayIndex));
+                var safeEndDay = Math.max(safeStartDay, Math.min(totalCells - 1, endDayIndex));
+                var daySpan = Math.max(1, (safeEndDay - safeStartDay) + 1);
 
-                // Find the index of the start day and end day in the timeline cells
-                var startIdx = 0;
-                var endIdx = totalCells - 1;
-                for (var i = 0; i < totalCells; i++) {
-                    if (timelineDayTimestamps[i] >= tStart) { startIdx = i; break; }
+                var leftPct = totalCells > 0 ? (safeStartDay / totalCells) * 100 : 0;
+                var widthPct = totalCells > 0 ? (daySpan / totalCells) * 100 : 100;
+                if ((leftPct + widthPct) > 100) {
+                    widthPct = Math.max(0, 100 - leftPct);
                 }
-                for (var j = totalCells - 1; j >= 0; j--) {
-                    if (timelineDayTimestamps[j] <= tEnd) { endIdx = j; break; }
-                }
-
-                // Calculate percentage based on cell indices (each cell is 1/totalCells wide)
-                var left = (startIdx / totalCells) * 100;
-                var width = ((endIdx - startIdx + 1) / totalCells) * 100;
+                var leftPx = safeStartDay * cellWidthPx;
+                var widthPx = daySpan * cellWidthPx;
 
                 var res = resources.find(function (r) { return r.id === t.resourceId; });
-                return Object.assign({}, t, {
-                    leftPct: Math.min(100, Math.max(0, left)),
-                    widthPct: Math.min(100 - left, Math.max(0.5, width)),
+                var taskForUi = Object.assign({}, t);
+                delete taskForUi._startTs;
+                delete taskForUi._endTs;
+                return Object.assign(taskForUi, {
+                    leftPct: Math.max(0, Math.min(100, leftPct)),
+                    widthPct: Math.max(0, Math.min(100, widthPct)),
+                    leftPx: leftPx,
+                    widthPx: widthPx,
                     resourceName: res ? res.name : 'Unassigned'
                 });
             });
@@ -1911,9 +1948,10 @@ sap.ui.define([
                         const dateObj = new Date(currentDay);
                         const dayOfWeek = dateObj.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
                         const dateNum = dateObj.getUTCDate();
+                        const monthNum = dateObj.getUTCMonth() + 1;
 
                         days.push({
-                            label: dayLetters[dayOfWeek] + dateNum,
+                            label: `${String(dateNum).padStart(2, '0')}/${String(monthNum).padStart(2, '0')}`,
                             fullDate: `${dateObj.getUTCMonth() + 1}/${dateNum}/${dateObj.getUTCFullYear()}`,
                             isWeekend: dayOfWeek === 0 || dayOfWeek === 6
                         });

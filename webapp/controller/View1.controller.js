@@ -10,6 +10,8 @@ sap.ui.define([
     const BATCH_GROUP = "$auto";
 
     return Controller.extend("projectmanagement.controller.View1", {
+        _customRolesStorageKey: "customRoles",
+
         _getODataModel: function () {
             const oComp = this.getOwnerComponent();
             // Use getModel() with no args to avoid "sModelName must be a string or omitted" when "" is not accepted
@@ -33,6 +35,27 @@ sap.ui.define([
             const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
             if (isNaN(d.getTime())) return null;
             return d.toISOString().slice(0, 10);
+        },
+
+        _getPersistedCustomRoles: function () {
+            try {
+                const aRoles = JSON.parse(localStorage.getItem(this._customRolesStorageKey) || "[]");
+                if (!Array.isArray(aRoles)) return [];
+                return aRoles
+                    .map(function (r) { return (r || "").toString().trim(); })
+                    .filter(Boolean);
+            } catch (e) {
+                return [];
+            }
+        },
+
+        _savePersistedCustomRoles: function (aRoles) {
+            const uniqueRoles = Array.from(new Set(
+                (aRoles || [])
+                    .map(function (r) { return (r || "").toString().trim(); })
+                    .filter(Boolean)
+            ));
+            localStorage.setItem(this._customRolesStorageKey, JSON.stringify(uniqueRoles));
         },
 
         _parseDateToUtcMidnightTimestamp: function (dateVal) {
@@ -222,6 +245,9 @@ sap.ui.define([
                     if (rr.role) {
                         oRoleSet.add(rr.role);
                     }
+                });
+                this._getPersistedCustomRoles().forEach(function (role) {
+                    oRoleSet.add(role);
                 });
 
                 // --- Assemble Templates with nested phases and tasks ---
@@ -511,6 +537,7 @@ sap.ui.define([
             if (newRole && !availableRoles.includes(newRole)) {
                 availableRoles.push(newRole);
                 oModel.setProperty("/availableRoles", availableRoles);
+                this._savePersistedCustomRoles(availableRoles);
             }
             oModel.setProperty("/newCustomRole", "");
         },

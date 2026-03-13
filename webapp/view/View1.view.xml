@@ -20,7 +20,7 @@
                 <Title text="Enterprise Project &amp; Resource Management" class="subHeaderTitle"/>
                 <Text text="Manage definitions, price profiles, and budget projections." class="subHeaderSubtitle"/>
             </VBox>
-            <!-- <Button text="+ Allocate Resource" press="onAddAllocation" class="customPrimaryBtn sapUiTinyMarginBottom"/> -->
+            <Button text="+ Allocate Resource" press="onAddAllocation" class="customPrimaryBtn sapUiTinyMarginBottom"/>
         </HBox>
 
         <VBox class="customContentArea">
@@ -38,7 +38,7 @@
                                 <VBox class="kpiCard borderPurple">
                                     <Text text="Total Consumed Cost" class="kpiTitle"/>
                                     <Title text="{path: '/analytics/summary/totalCost', formatter: '.formatCurrency'}" class="kpiValue"/>
-                                    <Text text="{parts: [{path: '/analytics/summary/budgetConsumption'}], formatter: 'sap.ui.core.format.NumberFormat.getFloatInstance({minFractionDigits: 2, maxFractionDigits: 2}).format'}% Consumed" class="{= ${/analytics/summary/budgetConsumption} > 100 ? 'kpiSubError' : 'kpiSubText'}" />
+                                    <Text text="{path: '/analytics/summary/budgetConsumption', formatter: '.formatDecimal'}% Consumed" class="{= ${/analytics/summary/budgetConsumption} > 100 ? 'kpiSubError' : 'kpiSubText'}" />
                                 </VBox>
                                 <VBox class="kpiCard borderTeal">
                                     <Text text="Total Resource Capacity" class="kpiTitle"/>

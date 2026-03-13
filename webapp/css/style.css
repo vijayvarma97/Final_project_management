@@ -288,13 +288,25 @@
 .sapMDialog footer,
 .sapMDialog footer.sapMTB {
     height: auto !important;
-    min-height: 3.5rem !important;
-    padding: 0.75rem 1.25rem 1rem 1.25rem !important;
+    min-height: 3rem !important;
+    padding: 0.5rem 1rem !important;
     background-color: #ffffff !important;
     background-image: none !important;
     border-top: none !important;
     box-shadow: none !important;
     overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+}
+
+/* Ensure all dialog footer toolbar variants are right-aligned with no separator */
+.sapMDialog .sapMDialogFooter,
+.sapMDialog .sapMDialogFooter .sapMTB,
+.sapMDialog .sapMDialogFooter .sapMTB-Transparent-CTX {
+    border-top: none !important;
+    box-shadow: none !important;
+    justify-content: flex-end !important;
 }
 
 /* Prevent the dialog content section from clipping the footer */
@@ -310,12 +322,27 @@
 /* FIX: Force a gap between the buttons in the dialog footer */
 .sapMDialog footer .sapMBtn {
     margin-left: 0.75rem !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
     overflow: visible !important;
+}
+
+.sapMDialog footer .sapMBtn:first-child {
+    margin-left: 0 !important;
 }
 
 /* Ensure the inner wrapper of footer buttons is never clipped */
 .sapMDialog footer .sapMBtnInner {
     overflow: visible !important;
+}
+
+/* Keep footer action buttons comfortably inside dialog bounds */
+.sapMDialog footer .customPrimaryBtn .sapMBtnInner,
+.sapMDialog footer .customCancelBtn .sapMBtnInner {
+    height: 2rem !important;
+    line-height: 2rem !important;
+    min-height: 2rem !important;
+    box-sizing: border-box !important;
 }
 
 .customLabel {

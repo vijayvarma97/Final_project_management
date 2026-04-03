@@ -48,7 +48,7 @@
                         </HBox>
                     </VBox>
                     
-                    <Button text="+ Add Additional Slot" press="onAddAllocSlot" type="Transparent" class="lightBlueTextBtn sapUiTinyMarginTop" />
+                    <!-- <Button text="+ Add Additional Slot" press="onAddAllocSlot" type="Transparent" class="lightBlueTextBtn sapUiTinyMarginTop" /> -->
                 </VBox>
             </VBox>
         </content>

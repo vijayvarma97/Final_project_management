@@ -87,6 +87,7 @@
                                                     <Column><Text text="Type" class="colText"/></Column>
                                                     <Column demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Roles" class="colText"/></Column>
                                                     <Column demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Assigned Projects" class="colText"/></Column>
+                                                    <Column hAlign="End" demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Allocated Time" class="colText"/></Column>
                                                 </columns>
                                                 <items>
                                                     <ColumnListItem vAlign="Middle">
@@ -97,6 +98,10 @@
                                                                 <Text text="{}" class="rolePill sapUiTinyMarginEnd" />
                                                             </HBox>
                                                             <Text text="{projectsAssigned}" class="lightText" />
+                                                            <VBox alignItems="End">
+                                                                <Text text="{totalHours} hrs / {totalTaskHours} hrs" class="boldText" />
+                                                                <Text text="+{extraTaskHours} extra hrs" visible="{= ${extraTaskHours} > 0}" class="textXs textRed" />
+                                                            </VBox>
                                                         </cells>
                                                     </ColumnListItem>
                                                 </items>
@@ -196,7 +201,7 @@
                                     <Column demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Timeline" class="colText"/></Column>
                                     <Column demandPopin="true" minScreenWidth="Desktop" popinDisplay="Inline"><Text text="Req. Roles" class="colText"/></Column>
                                     <Column demandPopin="true" minScreenWidth="Desktop" popinDisplay="Inline"><Text text="Allocated Resources" class="colText"/></Column>
-                                    <Column demandPopin="true" minScreenWidth="Desktop" popinDisplay="Inline"><Text text="Template" class="colText"/></Column>
+                                    <!-- <Column demandPopin="true" minScreenWidth="Desktop" popinDisplay="Inline"><Text text="Template" class="colText"/></Column> -->
                                     <Column hAlign="End" demandPopin="true" minScreenWidth="Tablet" popinDisplay="Inline"><Text text="Actual Costs" class="colText"/></Column>
                                     <Column hAlign="End"><Text text="Budget" class="colText"/></Column>
                                     <Column hAlign="Center" width="4rem"></Column>
@@ -220,7 +225,7 @@
                                                     <Text text="+{weekendHrs}h wkd" visible="{= ${weekendHrs} > 0}" class="textXs textRed sapUiTinyMarginBegin" />
                                                 </HBox>
                                             </VBox>
-                                            <Text text="{templateName}" class="lightText" />
+                                            <!-- <Text text="{templateName}" class="lightText" /> -->
                                             <Text text="{path: 'actualCost', formatter: '.formatCurrency'}" class="customBlueText" />
                                             <Text text="{path: 'budget', formatter: '.formatCurrency'}" class="boldText" />
                                             <HBox justifyContent="Center">
@@ -234,120 +239,16 @@
                         </VBox>
                     </IconTabFilter>
 
-                    <IconTabFilter text="Manage Templates" key="manageTemplates" icon="sap-icon://paste">
-                        <VBox class="tableWrapper sapUiMediumMarginTop">
 
-                            <!-- Single unified white bordered card -->
-                            <HBox width="100%" class="tplOuterCard" style="padding: 0;">
 
-                                <!-- Left: Template Library sidebar -->
-                                <VBox width="30%" class="tplLeftSidebar">
-                                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="tplSidebarHeader">
-                                        <Text text="Template Library" class="boldText" style="font-size: 0.9rem; color: #1f2937;" />
-                                        <HBox alignItems="Center">
-                                            <u:FileUploader
-                                                id="csvTemplateUploader"
-                                                name="csvTemplate"
-                                                buttonOnly="true"
-                                                buttonText="Import CSV"
-                                                iconOnly="false"
-                                                fileType="csv"
-                                                change="handleTemplateImport"
-                                                class="fileUploaderTransparent sapUiTinyMarginEnd"
-                                                style="Transparent" />
-                                            <Button text="+ New" press="onAddNewTemplate" type="Transparent" class="lightBlueTextBtn" />
-                                        </HBox>
-                                    </HBox>
 
-                                    <List items="{path: '/templates'}" showSeparators="Inner" class="sapUiNoMargin sapUiNoContentPadding">
-                                        <CustomListItem type="Active" press="onEditTemplate">
-                                            <VBox class="tplLibraryCard {= ${/uiState/editingTemplateId} === ${id} ? 'tplLibraryCardActive' : ''}">
-                                                <Text text="{name}" class="boldText" style="font-size: 0.875rem;" />
-                                                <Text text="{= ${phases} ? ${phases}.length : 0} Phases" class="lightText textXs" style="margin-top: 4px;" />
-                                            </VBox>
-                                        </CustomListItem>
-                                    </List>
-                                </VBox>
 
-                                <!-- Right: Template Editor / Empty state -->
-                                <VBox width="70%" class="tplRightPanel">
 
-                                    <!-- Empty State -->
-                                    <VBox height="100%" justifyContent="Center" alignItems="Center" visible="{= !${/uiState/editingTemplatePath} &amp;&amp; !${/uiState/showNewTemplate} }" style="min-height: 380px;">
-                                        <core:Icon src="sap-icon://paste" size="2.5rem" color="#d1d5db" class="sapUiSmallMarginBottom" />
-                                        <Text text="Select a template from the library to edit, or create a new one." class="lightText" style="font-size: 0.875rem; color: #9ca3af;" />
-                                    </VBox>
 
-                                    <!-- Template Editor -->
-                                    <VBox visible="{= !!${/uiState/editingTemplatePath} || ${/uiState/showNewTemplate} }" width="100%">
-                                        <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiMediumMarginBottom" style="border-bottom: 1px solid #f0f0f0; padding-bottom: 1rem;">
-                                            <VBox width="65%">
-                                                <Input value="{/uiState/newTemplateName}" class="customTemplateInput boldText" style="font-size: 1.25rem; padding: 0;" width="100%" />
-                                            </VBox>
-                                            <HBox alignItems="Center">
-                                                <Button text="Delete" press="onDeleteTemplate" type="Transparent" class="dangerTextBtn sapUiSmallMarginEnd" />
-                                                <Button text="Save Changes" press="onSaveTemplate" class="customPrimaryBtn" />
-                                            </HBox>
-                                        </HBox>
 
-                                        <HBox class="sapUiSmallMarginBottom">
-                                            <Button text="+ Add Phase" press="onAddTemplatePhase" class="customOutlineBtn" />
-                                        </HBox>
 
-                                        <VBox items="{path: '/uiState/editingTemplatePhases', templateShareable: true}" width="100%">
-                                            <VBox class="tplPhaseCard sapUiSmallMarginBottom" width="100%">
 
-                                                <!-- Phase Header -->
-                                                <HBox alignItems="Center" justifyContent="SpaceBetween" width="100%" class="tplPhaseHeader">
-                                                    <Input value="{name}" placeholder="Phase Name" class="transparentInput boldText" width="100%" style="font-size: 0.95rem;">
-                                                        <layoutData>
-                                                            <FlexItemData growFactor="1" styleClass="sapUiMediumMarginEnd" />
-                                                        </layoutData>
-                                                    </Input>
-                                                    <HBox alignItems="Center">
-                                                        <Button text="Add Task" press="onAddTaskToPhase" type="Transparent" class="lightBlueTextBtn sapUiTinyMarginEnd" />
-                                                        <Button text="Remove Phase" press="onRemovePhaseFromTemplate" type="Transparent" class="dangerTextBtn" />
-                                                    </HBox>
-                                                </HBox>
-
-                                                <!-- Tasks -->
-                                                <VBox width="100%" class="tplPhaseBody">
-                                                    <Text text="No tasks in this phase." visible="{= ${tasks}.length === 0 }" class="emptySlotsText sapUiSmallMargin" />
-                                                    <VBox items="{path: 'tasks', templateShareable: true}" width="100%">
-                                                        <HBox alignItems="Center" class="tplTaskRow" width="100%">
-                                                            <Input value="{name}" placeholder="Task Name" width="100%" class="customInput">
-                                                                <layoutData>
-                                                                    <FlexItemData growFactor="4" baseSize="0%" styleClass="sapUiTinyMarginEnd" />
-                                                                </layoutData>
-                                                            </Input>
-                                                            <Select selectedKey="{role}" items="{path: '/resources', templateShareable: true}" width="100%" class="forceWhiteSelect customInput" style="height: 2rem;">
-                                                                <core:Item key="{name}" text="{name}" />
-                                                                <layoutData>
-                                                                    <FlexItemData growFactor="3" baseSize="0%" styleClass="sapUiTinyMarginEnd" />
-                                                                </layoutData>
-                                                            </Select>
-                                                            <Input value="{defaultHours}" type="Number" placeholder="Hrs" width="100%" class="customInput textAlignCenter">
-                                                                <layoutData>
-                                                                    <FlexItemData growFactor="1" baseSize="0%" styleClass="sapUiTinyMarginEnd" />
-                                                                </layoutData>
-                                                            </Input>
-                                                            <Button icon="sap-icon://decline" press="onRemoveTaskFromPhase" type="Transparent" class="tplTaskDeleteBtn">
-                                                                <layoutData>
-                                                                    <FlexItemData growFactor="0" />
-                                                                </layoutData>
-                                                            </Button>
-                                                        </HBox>
-                                                    </VBox>
-                                                </VBox>
-                                            </VBox>
-                                        </VBox>
-
-                                    </VBox>
-                                </VBox>
-
-                            </HBox>
-                        </VBox>
-                    </IconTabFilter>
+                    
 
                     <IconTabFilter text="Project WBS" key="wbs" icon="sap-icon://org-chart">
                         <VBox class="tableWrapper sapUiMediumMarginTop">
@@ -367,7 +268,7 @@
                                 <VBox visible="{= !!${/wbsSelectedProjectId} }" class="sapUiMediumMarginTop" style="border-top: 1px solid #e5e7eb; padding-top: 0.5rem;">
                                     <HBox justifyContent="SpaceBetween" alignItems="Center" wrap="Wrap" width="100%">
                                         <Title text="Project Plan &amp; Allocations" class="tableTitle sapUiSmallMarginBottom" />
-                                        <HBox alignItems="Center" class="sapUiSmallMarginBottom">
+                                        <HBox alignItems="Center" class="sapUiSmallMarginBottom" wrap="Wrap">
                                             <Button text="+ Add Task" press="onAddWbsTask" class="customPrimaryBtn" />
                                         </HBox>
                                     </HBox>
@@ -396,8 +297,8 @@
                                                 <Input value="{name}" class="transparentInput" width="100%" change="onUpdateWbsTask" />
                                                 <Input value="{hours}" type="Number" class="customInput textAlignCenter" width="100%" change="onUpdateWbsTaskHours" />
                                                 <Input value="{predecessor}" type="Number" placeholder="" class="customInput textAlignCenter" width="100%" change="onUpdateWbsTaskPredecessor" />
-                                                <Input value="{startDateEdit}" type="Date" placeholder="YYYY-MM-DD" class="customInput textXsInput" width="100%" change="onUpdateWbsTaskStartDate"/>
-                                                <Input value="{endDateEdit}" type="Date" placeholder="YYYY-MM-DD" class="customInput textXsInput" width="100%" change="onUpdateWbsTaskEndDate" />
+                                                <Input value="{startDateEdit}" type="Date" placeholder="YYYY-MM-DD" class="customInput textXsInput" width="100%" editable="false"/>
+                                                <Input value="{endDateEdit}" type="Date" placeholder="YYYY-MM-DD" class="customInput textXsInput" width="100%" editable="false"/>
                                                 <Select selectedKey="{resourceId}" items="{path: '/resources'}" forceSelection="false" width="100%" class="forceWhiteSelect" change="onUpdateWbsTaskResource">
                                                     <core:Item key="{id}" text="{name}" />
                                                 </Select>
@@ -412,7 +313,7 @@
                             <VBox visible="{= !!${/wbsSelectedProjectId} &amp;&amp; ${/wbsTasksForSelectedProject}.length === 0 }" class="kpiCard" style="background-color: #f9fafb; padding: 2rem; align-items: center; justify-content: center; min-height: 200px;">
                                 <core:Icon src="sap-icon://hierarchy" size="3rem" color="#d1d5db" class="sapUiSmallMarginBottom" />
                                 <Text text="No Work Breakdown Structure defined yet." class="boldText" />
-                                <Text text="Import a template above or start adding tasks manually." class="lightText textXs sapUiTinyMarginTop" />
+                                <Text text="Start adding tasks manually or select a template when creating a project." class="lightText textXs sapUiTinyMarginTop" />
                             </VBox>
 
                         </VBox>
@@ -547,7 +448,131 @@
 
                     <IconTabFilter text="Employees" key="employees" icon="sap-icon://employee">
                         <VBox class="tableWrapper sapUiMediumMarginTop">
-                            <Page title="Employees" showHeader="true" backgroundDesign="Solid" />
+                            <VBox class="kpiCard sapUiSmallMarginBottom" style="padding: 1rem;">
+                                <VBox width="50%">
+                                    <Label text="Select Resource" class="filterLabel" />
+                                    <Select selectedKey="{/employeeSelectedResourceId}" items="{path: '/resources'}" forceSelection="false" change="onEmployeeResourceChange" width="25rem" class="forceWhiteSelect">
+                                        <core:Item key="{id}" text="{name}" />
+                                    </Select>
+                                </VBox>
+                            </VBox>
+
+                            <!-- KPI Summary Cards (above tasks table) -->
+                            <VBox visible="{= !!${/employeeSelectedResourceId} &amp;&amp; ${/employeeTasks}.length > 0 &amp;&amp; !!${/employeeTimeSummary} }">
+                                <HBox wrap="Wrap" justifyContent="SpaceBetween" class="kpiContainer sapUiSmallMarginBottom">
+                                    <VBox class="kpiCard borderBlue">
+                                        <Text text="Total Planned Hours" class="kpiTitle"/>
+                                        <Title text="{/employeeTimeSummary/totalPlannedHours} hrs" class="kpiValue"/>
+                                    </VBox>
+                                    <VBox class="kpiCard borderPurple">
+                                        <Text text="Total Time Worked" class="kpiTitle"/>
+                                        <Title text="{/employeeTimeSummary/totalWorkedDisplay}" class="kpiValue"/>
+                                    </VBox>
+                                    <VBox class="kpiCard borderTeal">
+                                        <Text text="Completion Rate" class="kpiTitle"/>
+                                        <Title text="{/employeeTimeSummary/completionPercent}%" class="kpiValue"/>
+                                        <Text text="{/employeeTimeSummary/completedCount} of {/employeeTimeSummary/totalCount} tasks" class="kpiSubText"/>
+                                    </VBox>
+                                    <VBox class="kpiCard borderOrange">
+                                        <Text text="Active Tasks" class="kpiTitle"/>
+                                        <Title text="{/employeeTimeSummary/inProgressCount}" class="kpiValue"/>
+                                        <Text text="Currently In Progress" class="kpiSubText"/>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+
+                            <!-- Employee Tasks Table -->
+                            <VBox visible="{= !!${/employeeSelectedResourceId} &amp;&amp; ${/employeeTasks}.length > 0 }" class="customPanel" style="overflow-x: auto;">
+                                <Panel backgroundDesign="Solid" class="customPanel">
+                                    <headerToolbar>
+                                        <Toolbar height="3rem" style="Clear">
+                                            <core:Icon src="sap-icon://task" class="sapUiTinyMarginEnd lightText"/>
+                                            <Title text="Assigned Tasks" class="tableTitle"/>
+                                        </Toolbar>
+                                    </headerToolbar>
+                                    <Table items="{/employeeTasks}" class="customTable" mode="None">
+                                        <columns>
+                                            <Column><Text text="Project" class="colText"/></Column>
+                                            <Column><Text text="Phase" class="colText"/></Column>
+                                            <Column><Text text="Task" class="colText"/></Column>
+                                            <Column hAlign="Center" width="5rem"><Text text="Planned" class="colText"/></Column>
+                                            <Column hAlign="Center" width="7rem"><Text text="Time Worked" class="colText"/></Column>
+                                            <Column hAlign="Center" width="5rem"><Text text="Progress" class="colText"/></Column>
+                                            <Column hAlign="Center"><Text text="Status" class="colText"/></Column>
+                                            <Column hAlign="Center" width="10rem"><Text text="Actions" class="colText"/></Column>
+                                        </columns>
+                                        <items>
+                                            <ColumnListItem vAlign="Middle" class="hoverableRow">
+                                                <cells>
+                                                    <VBox>
+                                                        <Text text="{projectName}" class="boldText" />
+                                                        <Text text="{path: 'startDate', formatter: '.formatDate'} - {path: 'endDate', formatter: '.formatDate'}" class="textXs lightText" />
+                                                    </VBox>
+                                                    <Text text="{phaseName}" class="lightText" />
+                                                    <Text text="{name}" class="boldText" />
+                                                    <Text text="{hours} hrs" class="boldText" />
+                                                    <VBox alignItems="Center">
+                                                        <Text text="{elapsedDisplay}" class="{= ${isOvertime} ? 'boldText textRed' : 'boldText customBlueText'}" />
+                                                        <Text text="{= ${isOvertime} ? 'Overtime' : ''}" visible="{isOvertime}" class="textXs textRed" />
+                                                    </VBox>
+                                                    <Text text="{progressPercent}%" class="{= ${progressPercent} >= 100 ? 'boldText textRed' : 'boldText'}" />
+                                                    <ObjectStatus text="{status}" state="{= ${status} === 'Completed' ? 'Success' : (${status} === 'In Progress' ? 'Warning' : (${status} === 'Paused' ? 'Information' : 'None'))}" inverted="true" class="customStatusPill" />
+                                                    <HBox justifyContent="Center" alignItems="Center">
+                                                        <Button icon="sap-icon://begin" tooltip="Start" press="onEmployeeTaskStart" type="Accept" enabled="{= ${status} !== 'In Progress' &amp;&amp; ${status} !== 'Completed'}" class="sapUiTinyMarginEnd" />
+                                                        <Button icon="sap-icon://pause" tooltip="Pause" press="onEmployeeTaskPause" type="Attention" enabled="{= ${status} === 'In Progress'}" class="sapUiTinyMarginEnd" />
+                                                        <Button icon="sap-icon://stop" tooltip="Stop / Complete" press="onEmployeeTaskStop" type="Reject" enabled="{= ${status} !== 'Completed' &amp;&amp; ${status} !== 'Not Started'}" />
+                                                    </HBox>
+                                                </cells>
+                                            </ColumnListItem>
+                                        </items>
+                                    </Table>
+                                </Panel>
+                            </VBox>
+
+                            <!-- Task Time Log (per-task breakdown) -->
+                            <VBox visible="{= !!${/employeeSelectedResourceId} &amp;&amp; ${/employeeTasks}.length > 0 }" class="sapUiSmallMarginTop">
+                                <Panel backgroundDesign="Solid" class="customPanel">
+                                    <headerToolbar>
+                                        <Toolbar height="3rem" style="Clear">
+                                            <core:Icon src="sap-icon://time-entry-request" class="sapUiTinyMarginEnd lightText"/>
+                                            <Title text="Task Time Log" class="tableTitle"/>
+                                        </Toolbar>
+                                    </headerToolbar>
+                                    <List items="{/employeeTasks}" class="customTable" showSeparators="Inner">
+                                        <CustomListItem class="hoverableRow">
+                                            <HBox alignItems="Center" justifyContent="SpaceBetween" width="100%" style="padding: 0.75rem 1rem;">
+                                                <VBox width="35%">
+                                                    <Text text="{name}" class="boldText" />
+                                                    <Text text="{projectName} · {phaseName}" class="lightText textXs" />
+                                                </VBox>
+                                                <VBox alignItems="Center" width="15%">
+                                                    <Text text="Planned" class="lightText textXs" />
+                                                    <Text text="{hours} hrs" class="boldText" />
+                                                </VBox>
+                                                <VBox alignItems="Center" width="15%">
+                                                    <Text text="Worked" class="lightText textXs" />
+                                                    <Text text="{elapsedDisplay}" class="{= ${isOvertime} ? 'boldText textRed' : 'boldText customBlueText'}" />
+                                                </VBox>
+                                                <VBox width="25%" class="sapUiTinyMarginBegin">
+                                                    <HBox justifyContent="SpaceBetween" width="100%">
+                                                        <Text text="{progressPercent}%" class="textXs boldText" />
+                                                        <ObjectStatus text="{status}" state="{= ${status} === 'Completed' ? 'Success' : (${status} === 'In Progress' ? 'Warning' : (${status} === 'Paused' ? 'Information' : 'None'))}" inverted="true" class="customStatusPill" />
+                                                    </HBox>
+                                                    <ProgressIndicator percentValue="{progressPercent}" displayValue="{elapsedDisplay} / {hours} hrs" state="{= ${progressPercent} >= 100 ? 'Error' : (${progressPercent} >= 75 ? 'Warning' : 'Success')}" class="sapUiTinyMarginTop" height="1.25rem" />
+                                                </VBox>
+                                            </HBox>
+                                        </CustomListItem>
+                                    </List>
+                                </Panel>
+                            </VBox>
+
+                            <!-- Empty State -->
+                            <VBox visible="{= !!${/employeeSelectedResourceId} &amp;&amp; ${/employeeTasks}.length === 0 }" class="kpiCard" style="background-color: #f9fafb; padding: 2rem; align-items: center; justify-content: center; min-height: 200px;">
+                                <core:Icon src="sap-icon://task" size="3rem" color="#d1d5db" class="sapUiSmallMarginBottom" />
+                                <Text text="No tasks assigned to this resource." class="boldText" />
+                                <Text text="Assign tasks in the Project WBS tab." class="lightText textXs sapUiTinyMarginTop" />
+                            </VBox>
+
                         </VBox>
                     </IconTabFilter>
 

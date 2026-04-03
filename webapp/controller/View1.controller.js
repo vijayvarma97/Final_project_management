@@ -126,7 +126,9 @@ sap.ui.define([
                 timelineSelectedProjectId: "",
                 timelineActiveSection: "tasks",
                 timelineData: { tasks: [], weeks: [] },
-                timelineResourceData: []
+                timelineResourceData: [],
+                employeeSelectedResourceId: "",
+                employeeTasks: []
             };
 
             const oModel = new JSONModel(oData);
@@ -345,16 +347,17 @@ sap.ui.define([
 
             const enrichedProjects = data.projects.map(p => {
                 let actualCost = 0;
-                const standardCapacity = this.getWorkingHours(p.startDate, p.endDate);
+                const workingHoursPerResource = this.getWorkingHours(p.startDate, p.endDate);
                 const assignedResources = data.allocations
                     .filter(a => a.projectId === p.id && a.resourceId) // Only include actual allocations with a valid resourceId
                     .map(a => {
                         const res = data.resources.find(r => r.id === a.resourceId);
                         if (res) actualCost += a.hours * res.hourlyRate;
-                        const weekendHrs = Math.max(0, a.hours - standardCapacity);
+                        const weekendHrs = Math.max(0, a.hours - workingHoursPerResource);
                         return { name: res?.name || 'Unknown', role: a.role || 'Unassigned', hours: a.hours, weekendHrs: weekendHrs };
                     });
 
+                const standardCapacity = workingHoursPerResource * (assignedResources.length || 1);
                 const template = data.templates.find(t => t.id === p.templateId);
                 const templateName = template ? template.name : "None";
 
@@ -419,8 +422,15 @@ sap.ui.define([
                     if (totalHours > MAX_HOURS) ab.percentage = ((ab.hours / totalHours) * 100) + "%";
                 });
 
+                // Calculate total task hours from WBS tasks assigned to this resource
+                const totalTaskHours = (data.wbsTasks || [])
+                    .filter(t => t.resourceId === r.id)
+                    .reduce((sum, t) => sum + (t.hours || 0), 0);
+                const extraTaskHours = Math.max(0, totalTaskHours - totalHours);
+
                 return {
                     ...r, totalHours, totalStandardHours, totalWeekendHours,
+                    totalTaskHours, extraTaskHours,
                     totalBilled: totalHours * r.hourlyRate,
                     projectsAssigned: Array.from(projectNames).join(', ') || 'None',
                     statusText: totalHours > MAX_HOURS ? "Over Occupied" : "Within Capacity",
@@ -511,6 +521,8 @@ sap.ui.define([
                     itemCopy.templateId = mMap[itemCopy.id] || "";
                 } catch (ignore) { }
             }
+            // Store original template ID to detect changes on save
+            oModel.setProperty("/editingOriginalTemplateId", itemCopy.templateId || "");
             oModel.setProperty("/editingProjectId", itemCopy.id);
             oModel.setProperty("/newProject", itemCopy);
             this._openDialog("CreateProject");
@@ -611,6 +623,20 @@ sap.ui.define([
                 this.byId("CreateProjectDialog").close();
                 MessageToast.show(editId ? "Project Updated" : "Project Saved");
                 await this._loadBackendData();
+
+                // Auto-import template tasks into WBS
+                if (!editId && newProj.templateId) {
+                    // New project: import template tasks
+                    await this._autoImportTemplateToWBS(sProjectId, newProj.templateId, newProj.startDate, false);
+                } else if (editId) {
+                    // Edit: check if template changed
+                    const sOldTemplateId = oModel.getProperty("/editingOriginalTemplateId") || "";
+                    const sNewTemplateId = newProj.templateId || "";
+                    if (sNewTemplateId !== sOldTemplateId) {
+                        // Template changed — delete old WBS tasks and import new ones
+                        await this._autoImportTemplateToWBS(sProjectId, sNewTemplateId, newProj.startDate, true);
+                    }
+                }
             } catch (e) {
                 MessageToast.show(editId ? "Failed to update project" : "Failed to create project");
                 // eslint-disable-next-line no-console
@@ -766,7 +792,37 @@ sap.ui.define([
             }
         },
 
-        onDeleteTemplate: async function () {
+        onDeleteTemplate: function () {
+            const oModel = this.getView().getModel();
+            const sEditPath = oModel.getProperty("/uiState/editingTemplatePath");
+            if (!sEditPath) return;
+
+            const oTemplate = oModel.getProperty(sEditPath);
+            if (!oTemplate || !oTemplate.id) return;
+
+            oModel.setProperty("/pendingDeleteTemplateName", oTemplate.name || "this template");
+
+            const oView = this.getView();
+            if (!this._pDeleteTemplateConfirmDialog) {
+                this._pDeleteTemplateConfirmDialog = this.loadFragment({
+                    name: "projectmanagement.view.fragments.DeleteTemplateConfirmation"
+                }).then(function (oDialog) {
+                    oView.addDependent(oDialog);
+                    return oDialog;
+                });
+            }
+            this._pDeleteTemplateConfirmDialog.then(function (oDialog) {
+                oDialog.open();
+            });
+        },
+
+        onDeleteTemplateConfirm: async function () {
+            if (this._pDeleteTemplateConfirmDialog) {
+                this._pDeleteTemplateConfirmDialog.then(function (oDialog) {
+                    oDialog.close();
+                });
+            }
+
             const oModel = this.getView().getModel();
             const sEditPath = oModel.getProperty("/uiState/editingTemplatePath");
             if (!sEditPath) return;
@@ -808,6 +864,14 @@ sap.ui.define([
             } catch (e) {
                 MessageToast.show("Failed to delete template");
                 console.error("Error deleting template", e);
+            }
+        },
+
+        onDeleteTemplateCancel: function () {
+            if (this._pDeleteTemplateConfirmDialog) {
+                this._pDeleteTemplateConfirmDialog.then(function (oDialog) {
+                    oDialog.close();
+                });
             }
         },
 
@@ -1371,6 +1435,9 @@ sap.ui.define([
         },
 
         onSaveAllocation: async function () {
+            if (this._isSavingAllocation) return;
+            this._isSavingAllocation = true;
+
             const oModel = this.getView().getModel();
 
             try {
@@ -1382,6 +1449,7 @@ sap.ui.define([
                     // eslint-disable-next-line no-console
                     console.error("onSaveAllocation: No projectId set on /newAllocation", oModel.getProperty("/newAllocation"));
                     MessageToast.show("Please select a project");
+                    this._isSavingAllocation = false;
                     return;
                 }
 
@@ -1390,6 +1458,7 @@ sap.ui.define([
                     // eslint-disable-next-line no-console
                     console.error("onSaveAllocation: No allocation slots available", slots);
                     MessageToast.show("Please assign at least one resource with hours");
+                    this._isSavingAllocation = false;
                     return;
                 }
 
@@ -1399,6 +1468,7 @@ sap.ui.define([
                     // eslint-disable-next-line no-console
                     console.error("onSaveAllocation: No valid slots (need resourceId and hours > 0). Current slots:", slots);
                     MessageToast.show("Please assign at least one resource with hours");
+                    this._isSavingAllocation = false;
                     return;
                 }
 
@@ -1439,6 +1509,8 @@ sap.ui.define([
                 MessageToast.show("Failed to save allocations");
                 // eslint-disable-next-line no-console
                 console.error("Error in onSaveAllocation", e);
+            } finally {
+                this._isSavingAllocation = false;
             }
         },
 
@@ -1537,9 +1609,39 @@ sap.ui.define([
             }
         },
 
-        onRemoveWbsTask: async function (oEvent) {
+        onRemoveWbsTask: function (oEvent) {
             const oContext = oEvent.getSource().getBindingContext();
-            const taskId = oContext.getObject().id;
+            const task = oContext.getObject();
+            const sId = task.id;
+            const sName = task.name || "this task";
+
+            this._pendingDeleteWbsTaskId = sId;
+            this.getView().getModel().setProperty("/pendingDeleteWbsTaskName", sName);
+
+            const oView = this.getView();
+            if (!this._pDeleteWbsTaskConfirmDialog) {
+                this._pDeleteWbsTaskConfirmDialog = this.loadFragment({
+                    name: "projectmanagement.view.fragments.DeleteWbsTaskConfirmation"
+                }).then(function (oDialog) {
+                    oView.addDependent(oDialog);
+                    return oDialog;
+                });
+            }
+            this._pDeleteWbsTaskConfirmDialog.then(function (oDialog) {
+                oDialog.open();
+            });
+        },
+
+        onDeleteWbsTaskConfirm: async function () {
+            if (this._pDeleteWbsTaskConfirmDialog) {
+                this._pDeleteWbsTaskConfirmDialog.then(function (oDialog) {
+                    oDialog.close();
+                });
+            }
+
+            const taskId = this._pendingDeleteWbsTaskId;
+            if (!taskId) return;
+            this._pendingDeleteWbsTaskId = null;
 
             const oODataModel = this._getODataModel();
             try {
@@ -1558,6 +1660,15 @@ sap.ui.define([
             } catch (e) {
                 MessageToast.show("Failed to remove WBS task");
                 console.error("Error removing WBS task", e);
+            }
+        },
+
+        onDeleteWbsTaskCancel: function () {
+            this._pendingDeleteWbsTaskId = null;
+            if (this._pDeleteWbsTaskConfirmDialog) {
+                this._pDeleteWbsTaskConfirmDialog.then(function (oDialog) {
+                    oDialog.close();
+                });
             }
         },
 
@@ -1707,6 +1818,7 @@ sap.ui.define([
                 oModel.setProperty("/wbsTasks", allTasks);
                 this._computeWbsTasks();
                 this._computeTimelineData();
+                this._calculateAnalytics();
             }
         },
 
@@ -1719,6 +1831,7 @@ sap.ui.define([
                 oModel.setProperty("/wbsTasks", allTasks);
                 this._computeWbsTasks();
                 this._computeTimelineData();
+                this._calculateAnalytics();
             }
 
             // Persist to backend
@@ -1739,51 +1852,92 @@ sap.ui.define([
             }
         },
 
-        onImportTemplateToWBS: async function () {
+        _autoImportTemplateToWBS: async function (sProjectId, sTemplateId, sProjectStartDate, bDeleteExisting) {
             const oModel = this.getView().getModel();
-            const tplId = oModel.getProperty("/wbsImportTemplateId");
-            const projId = oModel.getProperty("/wbsSelectedProjectId");
-
-            const tpl = (oModel.getProperty("/templates") || []).find(t => t.id === tplId);
-            const proj = (oModel.getProperty("/projects") || []).find(p => p.id === projId);
-
-            if (!tpl || !proj) return;
-
             const oODataModel = this._getODataModel();
-            const existingTasks = (oModel.getProperty("/wbsTasks") || []).filter(t => t.projectId === projId);
-            let seq = existingTasks.length;
+            const templateTaskMap = JSON.parse(localStorage.getItem("projectTemplateTasks") || "{}");
 
             try {
-                if (tpl.phases) {
-                    tpl.phases.forEach(phase => {
-                        if (phase.tasks) {
-                            phase.tasks.forEach(task => {
-                                seq++;
-                                this._createEntry(oODataModel, "/WBSTasks", {
-                                    project_ID: proj.id,
-                                    phaseName: phase.name,
-                                    name: task.name,
-                                    role: task.role || '',
-                                    resource_ID: null,
-                                    hours: task.defaultHours || 8,
-                                    startDate: this._formatDateForOData(proj.startDate),
-                                    endDate: this._formatDateForOData(this.calculateEndDate(proj.startDate, task.defaultHours || 8)),
-                                    status: 'Not Started',
-                                    sequence: seq,
-                                    predecessor_ID: null
-                                });
-                            });
+                // Step 1: Delete ONLY old template-originated tasks (not manually added ones)
+                if (bDeleteExisting) {
+                    const oldTaskIds = templateTaskMap[sProjectId] || [];
+                    if (oldTaskIds.length > 0) {
+                        const oListBinding = oODataModel.bindList("/WBSTasks");
+                        const aContexts = await oListBinding.requestContexts(0, 5000);
+                        for (const oCtx of aContexts) {
+                            const o = oCtx.getObject ? oCtx.getObject() : {};
+                            if (oldTaskIds.includes(o.ID)) {
+                                if (oCtx.delete) {
+                                    oCtx.delete(BATCH_GROUP);
+                                }
+                            }
                         }
-                    });
+                        await oODataModel.submitBatch(BATCH_GROUP);
+                        await this._loadBackendData();
+                    }
+                    // Clear old mapping for this project
+                    delete templateTaskMap[sProjectId];
+                    localStorage.setItem("projectTemplateTasks", JSON.stringify(templateTaskMap));
                 }
 
+                // Step 2: If no new template selected, we're done (user cleared the template)
+                if (!sTemplateId) {
+                    if (bDeleteExisting) {
+                        MessageToast.show("Old template tasks removed from WBS");
+                    }
+                    return;
+                }
+
+                // Step 3: Record existing task IDs before import so we can identify new ones after
+                const existingTaskIds = (oModel.getProperty("/wbsTasks") || [])
+                    .filter(t => t.projectId === sProjectId)
+                    .map(t => t.id);
+
+                const tpl = (oModel.getProperty("/templates") || []).find(t => t.id === sTemplateId);
+                if (!tpl || !tpl.phases) return;
+
+                const resources = oModel.getProperty("/resources") || [];
+                let seq = existingTaskIds.length;
+
+                tpl.phases.forEach(phase => {
+                    if (phase.tasks) {
+                        phase.tasks.forEach(task => {
+                            seq++;
+                            const matchedResource = resources.find(r => r.name === task.role);
+                            this._createEntry(oODataModel, "/WBSTasks", {
+                                project_ID: sProjectId,
+                                phaseName: phase.name,
+                                name: task.name,
+                                role: task.role || '',
+                                resource_ID: matchedResource ? matchedResource.id : null,
+                                hours: task.defaultHours || 8,
+                                startDate: this._formatDateForOData(sProjectStartDate),
+                                endDate: this._formatDateForOData(this.calculateEndDate(sProjectStartDate, task.defaultHours || 8)),
+                                status: 'Not Started',
+                                sequence: seq,
+                                predecessor_ID: null
+                            });
+                        });
+                    }
+                });
+
                 await oODataModel.submitBatch(BATCH_GROUP);
-                oModel.setProperty("/wbsImportTemplateId", "");
-                MessageToast.show("Template imported into WBS");
                 await this._loadBackendData();
+
+                // Step 4: Identify newly created task IDs and store them in localStorage
+                const allTaskIds = (oModel.getProperty("/wbsTasks") || [])
+                    .filter(t => t.projectId === sProjectId)
+                    .map(t => t.id);
+                const newTaskIds = allTaskIds.filter(id => !existingTaskIds.includes(id));
+
+                const updatedMap = JSON.parse(localStorage.getItem("projectTemplateTasks") || "{}");
+                updatedMap[sProjectId] = newTaskIds;
+                localStorage.setItem("projectTemplateTasks", JSON.stringify(updatedMap));
+
+                MessageToast.show("Template tasks imported into WBS");
             } catch (e) {
-                MessageToast.show("Failed to import template to WBS");
-                console.error("Error importing template to WBS", e);
+                MessageToast.show("Project saved but failed to import template tasks");
+                console.error("Error auto-importing template to WBS", e);
             }
         },
 
@@ -2054,6 +2208,177 @@ sap.ui.define([
             const oDate = new Date(dateStr);
             return DateFormat.getDateInstance({ style: "medium" }).format(oDate);
         },
+        onEmployeeResourceChange: function () {
+            this._computeEmployeeTasks();
+        },
+
+        _computeEmployeeTasks: function () {
+            const oModel = this.getView().getModel();
+            const resourceId = oModel.getProperty("/employeeSelectedResourceId");
+            if (!resourceId) {
+                oModel.setProperty("/employeeTasks", []);
+                oModel.setProperty("/employeeTimeSummary", null);
+                this._stopEmployeeTimer();
+                return;
+            }
+
+            const allTasks = oModel.getProperty("/wbsTasks") || [];
+            const projects = oModel.getProperty("/projects") || [];
+            const timeData = this._getTimeTrackingData();
+
+            const employeeTasks = allTasks
+                .filter(t => t.resourceId === resourceId)
+                .map(t => {
+                    const proj = projects.find(p => p.id === t.projectId);
+                    const td = timeData[t.id] || {};
+                    const workedHours = td.workedHours || 0;
+                    const startedAt = td.startedAt || null;
+
+                    // Calculate live elapsed if task is currently running
+                    let liveHours = workedHours;
+                    if (startedAt && t.status === "In Progress") {
+                        liveHours += (Date.now() - startedAt) / 3600000;
+                    }
+
+                    return {
+                        ...t,
+                        projectName: proj ? proj.name : "Unknown",
+                        workedHours: workedHours,
+                        liveWorkedHours: Math.round(liveHours * 100) / 100,
+                        elapsedDisplay: this._formatElapsed(liveHours),
+                        startedAt: startedAt,
+                        progressPercent: t.hours > 0 ? Math.min(100, Math.round((liveHours / t.hours) * 100)) : 0,
+                        isOvertime: liveHours > t.hours
+                    };
+                });
+
+            oModel.setProperty("/employeeTasks", employeeTasks);
+
+            // Compute summary
+            const totalPlannedHours = employeeTasks.reduce((s, t) => s + (t.hours || 0), 0);
+            const totalWorkedHours = employeeTasks.reduce((s, t) => s + (t.liveWorkedHours || 0), 0);
+            const completedCount = employeeTasks.filter(t => t.status === "Completed").length;
+            const inProgressCount = employeeTasks.filter(t => t.status === "In Progress").length;
+            const totalCount = employeeTasks.length;
+
+            oModel.setProperty("/employeeTimeSummary", {
+                totalPlannedHours: totalPlannedHours,
+                totalWorkedDisplay: this._formatElapsed(totalWorkedHours),
+                completedCount: completedCount,
+                inProgressCount: inProgressCount,
+                totalCount: totalCount,
+                completionPercent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+            });
+
+            // Start timer if any task is running
+            if (employeeTasks.some(t => t.status === "In Progress")) {
+                this._startEmployeeTimer();
+            } else {
+                this._stopEmployeeTimer();
+            }
+        },
+
+        _formatElapsed: function (hours) {
+            if (!hours || hours <= 0) return "0h 0m";
+            const h = Math.floor(hours);
+            const m = Math.round((hours - h) * 60);
+            return h + "h " + m + "m";
+        },
+
+        _getTimeTrackingData: function () {
+            try {
+                return JSON.parse(localStorage.getItem("employeeTimeTracking") || "{}");
+            } catch (e) { return {}; }
+        },
+
+        _saveTimeTrackingData: function (data) {
+            localStorage.setItem("employeeTimeTracking", JSON.stringify(data));
+        },
+
+        _startEmployeeTimer: function () {
+            if (this._employeeTimerInterval) return;
+            const that = this;
+            this._employeeTimerInterval = setInterval(function () {
+                that._computeEmployeeTasks();
+            }, 60000); // update every minute
+        },
+
+        _stopEmployeeTimer: function () {
+            if (this._employeeTimerInterval) {
+                clearInterval(this._employeeTimerInterval);
+                this._employeeTimerInterval = null;
+            }
+        },
+
+        _updateEmployeeTaskStatus: async function (oEvent, sNewStatus) {
+            const oContext = oEvent.getSource().getBindingContext();
+            const task = oContext.getObject();
+            const now = Date.now();
+
+            // Update time tracking data
+            const timeData = this._getTimeTrackingData();
+            if (!timeData[task.id]) {
+                timeData[task.id] = { workedHours: 0, startedAt: null };
+            }
+
+            if (sNewStatus === "In Progress") {
+                // Starting or resuming — record the start timestamp
+                timeData[task.id].startedAt = now;
+            } else if (sNewStatus === "Paused" || sNewStatus === "Completed") {
+                // Pausing or completing — accumulate elapsed time
+                if (timeData[task.id].startedAt) {
+                    const elapsed = (now - timeData[task.id].startedAt) / 3600000;
+                    timeData[task.id].workedHours = (timeData[task.id].workedHours || 0) + elapsed;
+                    timeData[task.id].startedAt = null;
+                }
+            }
+            this._saveTimeTrackingData(timeData);
+
+            // Update locally
+            const oModel = this.getView().getModel();
+            const employeeTasks = oModel.getProperty("/employeeTasks") || [];
+            const empIdx = employeeTasks.findIndex(t => t.id === task.id);
+            if (empIdx > -1) {
+                employeeTasks[empIdx].status = sNewStatus;
+                oModel.setProperty("/employeeTasks", [...employeeTasks]);
+            }
+
+            // Update in main wbsTasks array
+            const allTasks = oModel.getProperty("/wbsTasks") || [];
+            const mainIdx = allTasks.findIndex(t => t.id === task.id);
+            if (mainIdx > -1) {
+                allTasks[mainIdx].status = sNewStatus;
+                oModel.setProperty("/wbsTasks", allTasks);
+            }
+
+            // Persist status to backend
+            const oODataModel = this._getODataModel();
+            try {
+                const oCtx = oODataModel.bindContext("/WBSTasks(" + task.id + ")").getBoundContext();
+                oCtx.setProperty("status", sNewStatus);
+                await oODataModel.submitBatch(BATCH_GROUP);
+                MessageToast.show("Task " + sNewStatus);
+            } catch (e) {
+                MessageToast.show("Failed to update task status");
+                console.error("Error updating task status", e);
+            }
+
+            // Recompute to refresh the time display
+            this._computeEmployeeTasks();
+        },
+
+        onEmployeeTaskStart: function (oEvent) {
+            this._updateEmployeeTaskStatus(oEvent, "In Progress");
+        },
+
+        onEmployeeTaskPause: function (oEvent) {
+            this._updateEmployeeTaskStatus(oEvent, "Paused");
+        },
+
+        onEmployeeTaskStop: function (oEvent) {
+            this._updateEmployeeTaskStatus(oEvent, "Completed");
+        },
+
         formatDecimal: function (value) {
             if (value === null || value === undefined) return "0.00";
             return parseFloat(value).toFixed(2);

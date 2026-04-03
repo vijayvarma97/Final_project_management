@@ -1,0 +1,28 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="DeleteTemplateConfirmationDialog"
+        title="Delete Confirmation"
+        type="Message"
+        state="Warning">
+        
+        <content>
+            <Text text="Are you sure you want to delete template '{/pendingDeleteTemplateName}'?" class="sapUiSmallMargin" />
+        </content>
+        
+        <beginButton>
+            <Button
+                text="Yes"
+                type="Emphasized"
+                press=".onDeleteTemplateConfirm" />
+        </beginButton>
+        
+        <endButton>
+            <Button
+                text="No"
+                press=".onDeleteTemplateCancel" />
+        </endButton>
+        
+    </Dialog>
+</core:FragmentDefinition>

@@ -2106,7 +2106,8 @@ sap.ui.define([
                     widthPct: Math.max(0, Math.min(100, widthPct)),
                     leftPx: leftPx,
                     widthPx: widthPx,
-                    resourceName: res ? res.name : 'Unassigned'
+                    resourceName: res ? res.name : 'Unassigned',
+                    projectName: proj.name
                 });
             });
 
@@ -2382,6 +2383,245 @@ sap.ui.define([
         formatDecimal: function (value) {
             if (value === null || value === undefined) return "0.00";
             return parseFloat(value).toFixed(2);
-        }
+        },
+
+        onImportCSV: function () {
+            // Trigger the hidden FileUploader's file dialog
+            var oFileUploader = this.byId("wbsExcelFileUploader");
+            if (oFileUploader) {
+                // Access the internal file input and click it
+                var oDomRef = oFileUploader.getDomRef();
+                if (oDomRef) {
+                    var oInput = oDomRef.querySelector("input[type='file']");
+                    if (oInput) {
+                        oInput.click();
+                        return;
+                    }
+                }
+                // Fallback: use FeedInput or create a temporary file input
+                var oTempInput = document.createElement("input");
+                oTempInput.type = "file";
+                oTempInput.accept = ".xlsx,.xls,.csv";
+                oTempInput.style.display = "none";
+                document.body.appendChild(oTempInput);
+
+                var that = this;
+                oTempInput.addEventListener("change", function (evt) {
+                    var file = evt.target.files[0];
+                    if (file) {
+                        that._processImportedFile(file);
+                    }
+                    document.body.removeChild(oTempInput);
+                });
+                oTempInput.click();
+            }
+        },
+
+        onImportExcelFile: function (oEvent) {
+            var aFiles = oEvent.getParameter("files");
+            var file = aFiles && aFiles[0];
+            if (!file) return;
+            this._processImportedFile(file);
+        },
+
+        _loadXLSXLibrary: function () {
+            // Dynamically load SheetJS if not already available
+            return new Promise(function (resolve, reject) {
+                if (window.XLSX) {
+                    resolve(window.XLSX);
+                    return;
+                }
+                var script = document.createElement("script");
+                script.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+                script.onload = function () {
+                    if (window.XLSX) {
+                        resolve(window.XLSX);
+                    } else {
+                        reject(new Error("XLSX library failed to initialize"));
+                    }
+                };
+                script.onerror = function () {
+                    reject(new Error("Failed to load XLSX library from CDN"));
+                };
+                document.head.appendChild(script);
+            });
+        },
+
+        _processImportedFile: function (file) {
+            var oModel = this.getView().getModel();
+            var projId = oModel.getProperty("/wbsSelectedProjectId");
+            if (!projId) {
+                MessageToast.show("Please select a project first.");
+                return;
+            }
+
+            var that = this;
+
+            this._loadXLSXLibrary().then(function (XLSX) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    try {
+                        var data = new Uint8Array(e.target.result);
+                        var workbook = XLSX.read(data, { type: "array" });
+                        var sheetName = workbook.SheetNames[0];
+                        var worksheet = workbook.Sheets[sheetName];
+                        var jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                        if (!jsonData || jsonData.length === 0) {
+                            MessageToast.show("File is empty or has invalid format.");
+                            return;
+                        }
+
+                        that._importExcelRows(jsonData, projId);
+                    } catch (err) {
+                        MessageToast.show("Failed to parse file. Please ensure it is a valid Excel/CSV file.");
+                        console.error("Error parsing imported file", err);
+                    }
+                };
+
+                reader.readAsArrayBuffer(file);
+            }).catch(function (err) {
+                MessageToast.show("Failed to load Excel parsing library.");
+                console.error("XLSX library load error", err);
+            });
+        },
+
+        _findColumnValue: function (row, candidates) {
+            // Try to find a column value by checking multiple candidate header names (case-insensitive)
+            var keys = Object.keys(row);
+            for (var i = 0; i < candidates.length; i++) {
+                var candidate = candidates[i].toLowerCase();
+                for (var j = 0; j < keys.length; j++) {
+                    if (keys[j].toLowerCase().trim() === candidate) {
+                        return (row[keys[j]] || "").toString().trim();
+                    }
+                }
+            }
+            return "";
+        },
+
+        _importExcelRows: async function (jsonData, projId) {
+            var oModel = this.getView().getModel();
+            var projects = oModel.getProperty("/projects") || [];
+            var resources = oModel.getProperty("/resources") || [];
+            var proj = projects.find(function (p) { return p.id === projId; });
+
+            if (!proj) {
+                MessageToast.show("Selected project not found.");
+                return;
+            }
+
+            var projectStartDate = proj.startDate || "";
+            var oODataModel = this._getODataModel();
+            var existingTasks = (oModel.getProperty("/wbsTasks") || []).filter(function (t) { return t.projectId === projId; });
+            var seq = existingTasks.length;
+
+            // Track per-resource latest end date for chaining
+            var resourceEndDateMap = {};
+
+            // First, build up the end dates from existing tasks for each resource
+            existingTasks.forEach(function (t) {
+                if (t.resourceId && t.endDate) {
+                    if (!resourceEndDateMap[t.resourceId] || t.endDate > resourceEndDateMap[t.resourceId]) {
+                        resourceEndDateMap[t.resourceId] = t.endDate;
+                    }
+                }
+            });
+
+            // Parse all rows first to calculate dates correctly with resource chaining
+            var parsedTasks = [];
+            var that = this;
+
+            jsonData.forEach(function (row) {
+                var phaseName = that._findColumnValue(row, ["phase / criticality", "phase/criticality", "phase", "criticality"]);
+                var taskName = that._findColumnValue(row, ["task name", "task", "name"]);
+                var hoursStr = that._findColumnValue(row, ["hrs", "hours", "hour", "default hours"]);
+                var predecessorStr = that._findColumnValue(row, ["predecessor", "predecessors", "pred"]);
+                var resourceName = that._findColumnValue(row, ["resource", "resource name", "assigned resource", "resources"]);
+
+                if (!taskName) return; // Skip rows without a task name
+
+                var hours = parseInt(hoursStr) || 8;
+                var predecessor = predecessorStr ? predecessorStr.toString().trim() : "";
+
+                // Find matching resource by name (case-insensitive)
+                var matchedResource = null;
+                if (resourceName) {
+                    matchedResource = resources.find(function (r) {
+                        return r.name.toLowerCase().trim() === resourceName.toLowerCase().trim();
+                    });
+                }
+
+                var resourceId = matchedResource ? matchedResource.id : null;
+
+                // Calculate start date based on resource chaining
+                var startDate = "";
+                if (resourceId && resourceEndDateMap[resourceId]) {
+                    // Same resource has a previous task — chain from its end date
+                    startDate = that.getNextWorkingDay(resourceEndDateMap[resourceId]);
+                } else {
+                    // First task for this resource or no resource — use project start date
+                    startDate = projectStartDate;
+                }
+
+                // Calculate end date based on hours
+                var endDate = that.calculateEndDate(startDate, hours);
+
+                // Update the resource end date map for chaining
+                if (resourceId) {
+                    resourceEndDateMap[resourceId] = endDate;
+                }
+
+                seq++;
+                parsedTasks.push({
+                    projectId: projId,
+                    phaseName: phaseName || "Imported Phase",
+                    name: taskName,
+                    hours: hours,
+                    predecessor: predecessor,
+                    resourceId: resourceId,
+                    startDate: startDate,
+                    endDate: endDate,
+                    sequence: seq
+                });
+            });
+
+            if (parsedTasks.length === 0) {
+                MessageToast.show("No valid tasks found in the file. Please check column headers.");
+                return;
+            }
+
+            // Create all tasks in OData backend
+            try {
+                parsedTasks.forEach(function (task) {
+                    // Truncate strings to fit backend schema limits
+                    var safeName = (task.name || "").substring(0, 100);
+                    var safePhase = (task.phaseName || "").substring(0, 100);
+                    var safePredecessor = (task.predecessor || "").substring(0, 100);
+
+                    that._createEntry(oODataModel, "/WBSTasks", {
+                        project_ID: task.projectId,
+                        phaseName: safePhase,
+                        name: safeName,
+                        role: "",
+                        resource_ID: task.resourceId,
+                        hours: task.hours,
+                        startDate: that._formatDateForOData(task.startDate),
+                        endDate: that._formatDateForOData(task.endDate),
+                        status: "Not Started",
+                        sequence: task.sequence,
+                        predecessor_ID: safePredecessor || null
+                    });
+                });
+
+                await oODataModel.submitBatch(BATCH_GROUP);
+                MessageToast.show("Successfully imported " + parsedTasks.length + " tasks from file.");
+                await this._loadBackendData();
+            } catch (err) {
+                MessageToast.show("Failed to import tasks from file.");
+                console.error("Error importing tasks from Excel", err);
+            }
+        },
     });
 });

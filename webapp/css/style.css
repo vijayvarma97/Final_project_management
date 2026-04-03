@@ -999,7 +999,8 @@
     border: 1px solid #d1d5db;
     border-radius: 6px;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: auto;
+    max-height: 70vh;
     background: white;
 }
 
@@ -1020,6 +1021,8 @@
     background-color: #ffffff;
     z-index: 20;
     box-sizing: border-box;
+    position: sticky;
+    left: 0;
 }
 
 .timelineHeaderLabelCol {
@@ -1035,9 +1038,7 @@
     flex-direction: column !important;
     justify-content: center;
     border-left: 3px solid #3b82f6;
-    height: 3.5rem;
     min-height: 3.5rem;
-    max-height: 3.5rem;
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -1126,9 +1127,7 @@
     border-bottom: 1px solid #f0f0f0;
     position: relative;
     transition: background-color 0.15s ease;
-    height: 3.5rem;
     min-height: 3.5rem;
-    max-height: 3.5rem;
 }
 
 .timelineTaskRow:hover {
@@ -1138,7 +1137,6 @@
 /* Bar area (right part of each row, holds grid + gantt bar) */
 .timelineBarArea {
     position: relative !important;
-    height: 3.5rem;
     min-height: 3.5rem;
 }
 
@@ -1185,10 +1183,13 @@ span.ganttBarText {
 }
 
 .ganttResourceBarsWrapper {
-    position: absolute !important;
+    position: relative !important;
     width: 100% !important;
-    height: 100% !important;
     z-index: 10;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 4px 0 !important;
+    box-sizing: border-box !important;
 }
 
 .ganttTaskBarWrapper {
@@ -1207,9 +1208,27 @@ span.ganttBarText {
 }
 
 .ganttResourceBarRow {
-    height: 32px;
+    height: 28px;
+    min-height: 28px;
     align-items: center !important;
     pointer-events: none !important;
+    margin-bottom: 4px;
+}
+
+.ganttResourceBarRow:last-child {
+    margin-bottom: 0;
+}
+
+/* Dynamic resource row — auto height based on number of task bars */
+.dynamicResourcRow {
+    min-height: 3.5rem;
+    height: auto !important;
+}
+
+/* Resource label column should stretch to match row */
+.timelineTaskRow .timelineTaskLabelCol {
+    height: auto;
+    min-height: 3.5rem;
 }
 
 .ganttBarSpacer {
@@ -1243,7 +1262,7 @@ span.ganttBarText {
 .ganttBarResource {
     background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    height: 1.5rem !important;
+    height: 1.25rem !important;
     border-radius: 6px !important;
     display: flex !important;
     flex-direction: column !important;

@@ -239,17 +239,6 @@
                         </VBox>
                     </IconTabFilter>
 
-
-
-
-
-
-
-
-
-
-                    
-
                     <IconTabFilter text="Project WBS" key="wbs" icon="sap-icon://org-chart">
                         <VBox class="tableWrapper sapUiMediumMarginTop">
                             <VBox class="kpiCard sapUiSmallMarginBottom" style="padding: 1rem;">
@@ -269,6 +258,8 @@
                                     <HBox justifyContent="SpaceBetween" alignItems="Center" wrap="Wrap" width="100%">
                                         <Title text="Project Plan &amp; Allocations" class="tableTitle sapUiSmallMarginBottom" />
                                         <HBox alignItems="Center" class="sapUiSmallMarginBottom" wrap="Wrap">
+                                            <u:FileUploader id="wbsExcelFileUploader" visible="false" fileType="xlsx,xls,csv" change="onImportExcelFile" />
+                                            <Button text="Import" press="onImportCSV" class="customPrimaryBtn sapUiSmallMarginEnd" />
                                             <Button text="+ Add Task" press="onAddWbsTask" class="customPrimaryBtn" />
                                         </HBox>
                                     </HBox>
@@ -391,8 +382,7 @@
                                                 <!-- Bar -->
                                                 <HBox class="ganttTaskBarWrapper">
                                                     <VBox class="ganttBarSpacer" width="{leftPx}px"></VBox>
-                                                    <VBox class="ganttBarTask" width="{widthPx}px" tooltip="Start: {startDate}&#10;End: {endDate}">
-                                                        <Text text="{name}" class="ganttBarText" />
+                                                    <VBox class="ganttBarTask" width="{widthPx}px" tooltip="Task: {name}&#10;Project: {projectName}&#10;Start: {startDate}&#10;End: {endDate}&#10;Hours: {hours}">
                                                     </VBox>
                                                 </HBox>
                                             </HBox>
@@ -426,7 +416,6 @@
                                                     <HBox class="ganttResourceBarRow">
                                                         <VBox class="ganttBarSpacer" width="{leftPx}px"></VBox>
                                                         <VBox class="ganttBarResource" width="{widthPx}px" tooltip="Task: {name}&#10;Start: {startDate}&#10;End: {endDate}&#10;Hours: {hours}">
-                                                            <Text text="{name}" class="ganttBarText" />
                                                         </VBox>
                                                     </HBox>
                                                 </VBox>
